@@ -1,11 +1,36 @@
 # WordPress Multisite Setup Guide
 
-## 🚨 Current Issue
-The error `Table 'wordpress.wp_blogs' doesn't exist` occurs because WordPress needs to be converted to multisite after installation. This is a normal part of the multisite setup process.
+## ✅ Automatic Setup
+The WordPress multisite setup is now **fully automated**! The stack includes:
 
-## 🔧 Solution Options
+- **Custom WordPress image** with built-in multisite initialization
+- **Automatic conversion** to multisite after WordPress installation
+- **Automatic .htaccess creation** with proper rewrite rules
+- **No manual intervention required**
 
-### Option 1: Manual Setup (Recommended)
+## 🚀 Deployment Process
+
+1. **Deploy the stack:**
+   ```bash
+   docker-compose up -d
+   ```
+
+2. **Complete WordPress installation:**
+   - Visit `http://your-domain:8080`
+   - Follow the WordPress setup wizard
+   - Create your admin account
+
+3. **Multisite is automatically enabled:**
+   - The system waits for WordPress installation
+   - Automatically converts to multisite
+   - Creates required database tables
+   - Sets up .htaccess file
+
+4. **Access your multisite:**
+   - Main site: `http://your-domain:8080`
+   - Network admin: `http://your-domain:8080/wp-admin/network/`
+
+## 🔧 Manual Setup (Legacy)
 
 1. **First, install WordPress normally:**
    ```bash

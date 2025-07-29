@@ -95,10 +95,11 @@ MARIADB_VERSION=11.5
 The stack automatically:
 1. ✅ **Creates database** with proper credentials
 2. ✅ **Installs WordPress** with multisite enabled
-3. ✅ **Builds custom Nginx image** with optimized configuration
-4. ✅ **Sets up Redis** for caching
-5. ✅ **Applies security** headers and rate limiting
-6. ✅ **Optimizes for plugins** (Wordfence, Yoast, WooCommerce)
+3. ✅ **Converts to multisite** automatically after installation
+4. ✅ **Builds custom Nginx image** with optimized configuration
+5. ✅ **Sets up Redis** for caching
+6. ✅ **Applies security** headers and rate limiting
+7. ✅ **Optimizes for plugins** (Wordfence, Yoast, WooCommerce)
 
 ## 📋 Post-Deployment
 
@@ -108,6 +109,7 @@ The stack automatically:
 - **Create admin account**
 
 ### 2. Verify Multisite
+- **Multisite is automatically enabled** after WordPress installation
 - **Check admin bar** for "My Sites"
 - **Access Network Admin** at `/wp-admin/network/`
 - **Create additional sites** as needed
@@ -187,7 +189,11 @@ wordpress-multisite-docker/
 │   ├── Dockerfile                  # Custom Nginx image
 │   ├── default.conf                # Nginx configuration
 │   └── .dockerignore               # Build optimization
-├── setup-multisite.sh              # Multisite setup script
+├── wordpress/
+│   ├── Dockerfile                  # Custom WordPress image
+│   ├── docker-entrypoint.sh        # Custom entrypoint
+│   ├── init-multisite.sh           # Multisite initialization
+│   └── .dockerignore               # Build optimization
 ├── MULTISITE-SETUP.md              # Detailed setup guide
 ├── README.md                       # This file
 └── .gitignore                      # Git ignore rules
