@@ -24,9 +24,7 @@ services:
 
   # ── WORDPRESS ──
   wordpress:
-    build:
-      context: ./wordpress
-      dockerfile: Dockerfile
+    image: wordpress:php8.4-fpm
     restart: unless-stopped
     depends_on:
       - db
@@ -43,12 +41,6 @@ services:
         define('WP_REDIS_PASSWORD', '');
         define('WP_CACHE', true);
         define('WP_ALLOW_MULTISITE', true);
-        define('MULTISITE', true);
-        define('SUBDOMAIN_INSTALL', ${SUBDOMAIN_INSTALL:-false});
-        define('DOMAIN_CURRENT_SITE', '${DOMAIN_CURRENT_SITE:-dashplan.io}');
-        define('PATH_CURRENT_SITE', '${PATH_CURRENT_SITE:-/}');
-        define('SITE_ID_CURRENT_SITE', ${SITE_ID_CURRENT_SITE:-1});
-        define('BLOG_ID_CURRENT_SITE', ${BLOG_ID_CURRENT_SITE:-1});
         if (!defined('WP_DEBUG')) define('WP_DEBUG', true);
         if (!defined('WP_DEBUG_LOG')) define('WP_DEBUG_LOG', true);
     volumes:

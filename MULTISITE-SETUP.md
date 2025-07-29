@@ -1,12 +1,12 @@
 # WordPress Multisite Setup Guide
 
-## ✅ Automatic Setup
-The WordPress multisite setup is now **fully automated**! The stack includes:
+## ✅ Simple Setup
+The WordPress multisite setup is now **simple and manual**! The stack includes:
 
-- **Custom WordPress image** with built-in multisite initialization
-- **Automatic conversion** to multisite after WordPress installation
-- **Automatic .htaccess creation** with proper rewrite rules
-- **No manual intervention required**
+- **WordPress with multisite support ready** (WP_ALLOW_MULTISITE enabled)
+- **Manual activation** when you're ready
+- **No automatic conversion** - you control when to enable multisite
+- **Clean, reliable deployment**
 
 ## 🚀 Deployment Process
 
@@ -20,11 +20,14 @@ The WordPress multisite setup is now **fully automated**! The stack includes:
    - Follow the WordPress setup wizard
    - Create your admin account
 
-3. **Multisite is automatically enabled:**
-   - The system waits for WordPress installation
-   - Automatically converts to multisite
-   - Creates required database tables
-   - Sets up .htaccess file
+3. **Activate multisite when ready:**
+   ```bash
+   # Linux/Mac:
+   ./activate-multisite.sh
+   
+   # Windows:
+   bash activate-multisite.sh
+   ```
 
 4. **Access your multisite:**
    - Main site: `http://your-domain:8080`
