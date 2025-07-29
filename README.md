@@ -95,7 +95,7 @@ MARIADB_VERSION=11.5
 The stack automatically:
 1. ✅ **Creates database** with proper credentials
 2. ✅ **Installs WordPress** with multisite enabled
-3. ✅ **Loads Nginx configuration** from `nginx/default.conf`
+3. ✅ **Builds custom Nginx image** with optimized configuration
 4. ✅ **Sets up Redis** for caching
 5. ✅ **Applies security** headers and rate limiting
 6. ✅ **Optimizes for plugins** (Wordfence, Yoast, WooCommerce)
@@ -184,7 +184,9 @@ wordpress-multisite-docker/
 ├── docker-compose.yml              # WordPress multisite configuration
 ├── env.example                     # Environment template
 ├── nginx/
-│   └── default.conf                # Nginx configuration
+│   ├── Dockerfile                  # Custom Nginx image
+│   ├── default.conf                # Nginx configuration
+│   └── .dockerignore               # Build optimization
 ├── setup-multisite.sh              # Multisite setup script
 ├── MULTISITE-SETUP.md              # Detailed setup guide
 ├── README.md                       # This file

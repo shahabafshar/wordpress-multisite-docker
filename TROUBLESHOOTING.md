@@ -21,40 +21,40 @@ cat nginx/default.conf
 ```
 
 #### Option B: Manual Configuration (Portainer)
-If deploying via Portainer repository and the file isn't loading:
+If deploying via Portainer repository and the build fails:
 
-1. **Deploy without Nginx config first:**
-   ```yaml
-   # Temporarily comment out the configs section in docker-compose.yml
-   # configs:
-   #   nginx_config:
-   #     file: ./nginx/default.conf
+1. **Check build context:**
+   ```bash
+   # Verify the nginx directory structure
+   ls -la nginx/
+   cat nginx/Dockerfile
    ```
 
-2. **Add configuration manually:**
-   - Go to Portainer → Volumes
-   - Create a new volume called `nginx_config`
-   - Browse the volume and create `default.conf`
-   - Copy content from `nginx/default.conf`
+2. **Build manually:**
+   ```bash
+   # Build the Nginx image locally first
+   docker build -t custom-nginx ./nginx
+   ```
 
-3. **Update docker-compose.yml:**
+3. **Use pre-built image:**
    ```yaml
-   volumes:
-     - nginx_config:/etc/nginx/conf.d
+   # Temporarily use a different approach
+   nginx:
+     image: nginx:alpine
+     volumes:
+       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
    ```
 
 #### Option C: Embedded Configuration
-If external file loading continues to fail, embed the configuration directly:
+If build continues to fail, embed the configuration directly:
 
 ```yaml
-configs:
-  nginx_config:
-    content: |
-      # Copy the entire content of nginx/default.conf here
-      server {
-          listen 80;
-          # ... rest of configuration
-      }
+nginx:
+  image: nginx:alpine
+  volumes:
+    - type: bind
+      source: ./nginx/default.conf
+      target: /etc/nginx/conf.d/default.conf
 ```
 
 ### 2. Database Connection Issues
