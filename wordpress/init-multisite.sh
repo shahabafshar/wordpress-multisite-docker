@@ -10,7 +10,7 @@ echo "🚀 WordPress Multisite Initialization..."
 # Wait for WordPress to be installed
 wait_for_wordpress() {
     echo "⏳ Waiting for WordPress installation..."
-    local max_attempts=60
+    local max_attempts=30
     local attempt=1
     
     while [ $attempt -le $max_attempts ]; do
@@ -19,8 +19,10 @@ wait_for_wordpress() {
             return 0
         fi
         
-        echo "⏳ Attempt $attempt/$max_attempts - WordPress not installed yet..."
-        sleep 10
+        if [ $((attempt % 3)) -eq 0 ]; then
+            echo "⏳ Attempt $attempt/$max_attempts - WordPress not installed yet..."
+        fi
+        sleep 20
         attempt=$((attempt + 1))
     done
     
@@ -86,6 +88,12 @@ EOF
 # Main execution
 echo "🚀 Starting WordPress Multisite initialization..."
 
+# Quick check if multisite is already set up
+if wp core is-installed --network --allow-root 2>/dev/null; then
+    echo "✅ Multisite already enabled - no initialization needed!"
+    exit 0
+fi
+
 # Wait for WordPress to be installed
 if ! wait_for_wordpress; then
     echo "❌ WordPress initialization failed: WordPress not installed"
@@ -103,6 +111,10 @@ if ! create_htaccess; then
     echo "❌ .htaccess creation failed"
     exit 1
 fi
+
+# Create marker file to indicate multisite is configured
+touch /var/www/html/.multisite-configured
+echo "✅ Multisite configuration marker created"
 
 echo "🎉 WordPress Multisite initialization complete!"
 echo "🌐 Your multisite is ready!" 
