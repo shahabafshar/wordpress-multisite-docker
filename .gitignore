@@ -1,0 +1,97 @@
+# Environment files
+.env
+.env.local
+.env.production
+.env.staging
+
+# WordPress files
+wp-content/
+uploads/
+plugins/
+themes/
+mu-plugins/
+wp-config.php
+.htaccess
+
+# Database files
+*.sql
+*.sql.gz
+backup.sql
+
+# Logs
+*.log
+logs/
+nginx_logs/
+wordpress_logs/
+
+# Docker volumes
+db_data/
+redis_data/
+wordpress_data/
+nginx_logs/
+
+# Temporary files
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Cache files
+cache/
+wp-content/cache/
+wp-content/uploads/cache/
+
+# Node modules (if any build tools)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Composer (if any PHP dependencies)
+vendor/
+composer.lock
+
+# SSL certificates
+*.pem
+*.key
+*.crt
+*.csr
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+# Portainer specific
+portainer-stack-*.yml
+
+# Old single-site files (removed)
+env.single.example
+docker-compose.single.yml
+
+# Old nginx config files (removed - now embedded)
+nginx_config/
+portainer-nginx-config.conf
+PORTAINER-DEPLOYMENT.md
+
+# Nginx configuration (keep the config file)
+# nginx/default.conf should be included in repository 
