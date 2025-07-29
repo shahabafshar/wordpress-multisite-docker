@@ -70,7 +70,9 @@ services:
     volumes:
       - wordpress_data:/var/www/html
       - nginx_logs:/var/log/nginx
-      - ./nginx:/etc/nginx/conf.d
+    configs:
+      - source: nginx_config
+        target: /etc/nginx/conf.d/default.conf
     networks:
       - wordpress_network
 
@@ -84,7 +86,9 @@ volumes:
   nginx_logs:
     driver: local
 
-
+configs:
+  nginx_config:
+    file: ./nginx/default.conf
 
 networks:
   wordpress_network:

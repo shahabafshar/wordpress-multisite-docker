@@ -75,11 +75,12 @@ This directory contains the Nginx configuration for the WordPress multisite Dock
 
 ## Deployment
 
-The configuration is automatically mounted into the Nginx container at deployment time:
+The configuration is automatically loaded into the Nginx container using Docker configs:
 
 ```yaml
-volumes:
-  - ./nginx:/etc/nginx/conf.d
+configs:
+  nginx_config:
+    file: ./nginx/default.conf
 ```
 
 ## Troubleshooting

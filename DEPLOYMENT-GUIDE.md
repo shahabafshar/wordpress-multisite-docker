@@ -24,7 +24,7 @@ This guide will walk you through deploying the WordPress Multisite Docker Stack 
    - **Repository URL:** `https://github.com/yourusername/wordpress-multisite-docker`
    - **Repository reference:** `main` (or your preferred branch)
    - **Compose path:** `docker-compose.yml`
-   - **Nginx configuration** will be automatically mounted from `nginx/default.conf`
+   - **Nginx configuration** will be automatically loaded from `nginx/default.conf`
 
 3. **Environment Variables**
    - Click **Environment variables**
@@ -185,7 +185,7 @@ EOF'
 
 ### Customizing Nginx Configuration
 
-The Nginx configuration is stored in `nginx/default.conf` and is automatically mounted into the container. You can customize it before deployment:
+The Nginx configuration is stored in `nginx/default.conf` and is automatically loaded into the container using Docker configs. You can customize it before deployment:
 
 1. **Edit the configuration file:**
    ```bash

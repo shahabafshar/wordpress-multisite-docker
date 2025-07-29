@@ -95,7 +95,7 @@ MARIADB_VERSION=11.5
 The stack automatically:
 1. ✅ **Creates database** with proper credentials
 2. ✅ **Installs WordPress** with multisite enabled
-3. ✅ **Mounts Nginx configuration** from `nginx/default.conf`
+3. ✅ **Loads Nginx configuration** from `nginx/default.conf`
 4. ✅ **Sets up Redis** for caching
 5. ✅ **Applies security** headers and rate limiting
 6. ✅ **Optimizes for plugins** (Wordfence, Yoast, WooCommerce)
