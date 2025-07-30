@@ -66,10 +66,7 @@ else
         wp theme install twentytwentyfour --allow-root 2>/dev/null || true
     fi
     
-    # Install MIME type fix plugin
-    echo "🔧 Installing MIME type fix plugin..."
-    cp /usr/local/bin/fix-mime-types.php /var/www/html/wp-content/mu-plugins/
-    chown www-data:www-data /var/www/html/wp-content/mu-plugins/fix-mime-types.php
+
 fi
 
 # Check if multisite is already enabled
