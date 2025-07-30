@@ -1,10 +1,10 @@
 # 🚀 WordPress Multisite Docker Stack
 
-A production-ready WordPress multisite Docker stack optimized for performance, security, and popular plugins. **Multisite-only configuration - deploy with one click in Portainer!**
+A production-ready WordPress Multisite Docker stack with **fully automated installation**. Just deploy and visit your site - WordPress multisite will be ready instantly! Optimized for performance, security, and popular plugins.
 
 ## ✨ Features
 
-- ✅ **WordPress Multisite** - Ready out-of-the-box (multisite-only)
+- ✅ **Fully Automated Multisite** - Complete WordPress multisite setup without any manual steps
 - ✅ **MariaDB 11.5** - Optimized database
 - ✅ **Redis** - Object caching for performance
 - ✅ **Nginx** - Optimized for WordPress and plugins
@@ -14,31 +14,40 @@ A production-ready WordPress multisite Docker stack optimized for performance, s
 - ✅ **Performance Optimized** - Gzip, caching, compression
 - ✅ **Portainer Ready** - Deploy with one click
 
-## 🎯 Quick Start (Portainer)
+## 🚀 Quick Start
 
-### Option 1: One-Click Deploy
-1. **Copy the repository URL:** `https://github.com/yourusername/wordpress-multisite-docker`
-2. **In Portainer:** Stacks → Add Stack → Repository
-3. **Paste the URL** and select `docker-compose.yml`
-4. **Click Deploy** - That's it! 🎉
+### 1. Deploy the Stack
 
-### Option 2: Manual Deploy
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/yourusername/wordpress-multisite-docker
-   cd wordpress-multisite-docker
-   ```
+**Option A: Portainer Repository**
+1. **In Portainer:** Stacks → Add Stack → Repository  
+2. **Repository URL:** `https://github.com/yourusername/wordpress-multisite-docker`
+3. **Compose file:** `docker-compose.yml`
+4. **Environment file:** Upload `.env` (copy from `env.example`)
+5. **Click Deploy**
 
-2. **Copy environment file:**
-   ```bash
-   cp env.example .env
-   ```
+**Option B: Local Docker**
+```bash
+git clone https://github.com/yourusername/wordpress-multisite-docker
+cd wordpress-multisite-docker
+cp env.example .env
+# Edit .env with your settings
+docker-compose up -d
+```
 
-3. **Deploy in Portainer:**
-   - Go to Stacks → Add Stack
-   - Upload `docker-compose.yml`
-   - Upload `.env` file
-   - Click Deploy
+### 2. That's it! 🎉
+
+**Your WordPress Multisite is automatically ready:**
+- **Main site:** `http://localhost:8080` (or your domain)
+- **Network Admin:** `http://localhost:8080/wp-admin/network/`
+- **Login:** Use credentials from your `.env` file
+
+The system automatically:
+- ✅ Installs WordPress
+- ✅ Converts to multisite network
+- ✅ Configures all necessary settings
+- ✅ Creates proper `.htaccess` rules
+
+**No manual steps required!** Just deploy and use.
 
 ## 🔧 Configuration
 
