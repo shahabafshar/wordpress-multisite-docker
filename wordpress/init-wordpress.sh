@@ -52,6 +52,7 @@ else
     mkdir -p /var/www/html/wp-content/themes
     mkdir -p /var/www/html/wp-content/plugins
     mkdir -p /var/www/html/wp-content/uploads
+    mkdir -p /var/www/html/wp-content/mu-plugins
     
     # Ensure default theme is available
     echo "🎨 Ensuring default theme is available..."
@@ -64,6 +65,11 @@ else
     if [ ! -d "/var/www/html/wp-content/themes/twentytwentyfour" ]; then
         wp theme install twentytwentyfour --allow-root 2>/dev/null || true
     fi
+    
+    # Install MIME type fix plugin
+    echo "🔧 Installing MIME type fix plugin..."
+    cp /usr/local/bin/fix-mime-types.php /var/www/html/wp-content/mu-plugins/
+    chown www-data:www-data /var/www/html/wp-content/mu-plugins/fix-mime-types.php
 fi
 
 # Check if multisite is already enabled
