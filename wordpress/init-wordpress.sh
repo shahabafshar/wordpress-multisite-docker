@@ -30,6 +30,12 @@ if wp core is-installed --allow-root 2>/dev/null; then
 else
     echo "🔧 Installing WordPress..."
     
+    # Download WordPress core if not present
+    if [ ! -f /var/www/html/wp-config.php ]; then
+        echo "📥 Downloading WordPress core..."
+        wp core download --allow-root --force
+    fi
+    
     # Install WordPress
     wp core install \
         --url="${DOMAIN_CURRENT_SITE:-localhost}" \
@@ -40,6 +46,24 @@ else
         --allow-root
     
     echo "✅ WordPress installed successfully"
+    
+    # Ensure WordPress directories exist
+    echo "📁 Ensuring WordPress directories exist..."
+    mkdir -p /var/www/html/wp-content/themes
+    mkdir -p /var/www/html/wp-content/plugins
+    mkdir -p /var/www/html/wp-content/uploads
+    
+    # Ensure default theme is available
+    echo "🎨 Ensuring default theme is available..."
+    if [ ! -d "/var/www/html/wp-content/themes/twentytwentyfive" ]; then
+        echo "📥 Installing default theme..."
+        wp theme install twentytwentyfive --activate --allow-root
+    fi
+    
+    # Also install other common themes for fallback
+    if [ ! -d "/var/www/html/wp-content/themes/twentytwentyfour" ]; then
+        wp theme install twentytwentyfour --allow-root 2>/dev/null || true
+    fi
 fi
 
 # Check if multisite is already enabled
