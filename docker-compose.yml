@@ -78,6 +78,7 @@ services:
     volumes:
       - wordpress_data:/var/www/html
       - nginx_logs:/var/log/nginx
+      - nginx_conf:/etc/nginx/conf.d 
     networks:
       - wordpress_network
 
