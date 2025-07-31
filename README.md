@@ -54,23 +54,6 @@ The system automatically:
 ### Environment Variables
 Edit `.env` file to customize your setup:
 
-### Nginx Configuration
-The Nginx configuration is mounted from `./nginx/default.conf` and can be edited directly on the host:
-
-```bash
-# Edit Nginx configuration
-nano nginx/default.conf
-
-# Reload Nginx after changes
-docker-compose restart nginx
-```
-
-**Key configuration features:**
-- WordPress multisite support (subdirectory)
-- Security headers and rate limiting
-- Performance optimizations (Gzip, caching)
-- Plugin compatibility (Yoast SEO, Wordfence, WooCommerce)
-
 ```bash
 # Database settings
 WORDPRESS_DB_HOST=db
@@ -196,9 +179,9 @@ docker exec -it CONTAINER_NAME mysqldump -u root -p wordpress > backup.sql
 - Verify network connectivity between containers
 
 ### Multisite Setup Issues
-- Run `./activate-multisite.sh` after WordPress installation
+- Follow the [MULTISITE-SETUP.md](MULTISITE-SETUP.md) guide
+- Run multisite conversion manually if needed
 - Check `.htaccess` file exists and has correct permissions
-- Verify multisite constants are added to wp-config.php
 
 ### Performance Issues
 - Check Redis container is running
@@ -212,8 +195,11 @@ wordpress-multisite-docker/
 ├── docker-compose.yml              # WordPress multisite configuration
 ├── env.example                     # Environment template
 ├── nginx/
-│   └── default.conf                # Nginx configuration (editable on host)
+│   ├── Dockerfile                  # Custom Nginx image
+│   ├── default.conf                # Nginx configuration
+│   └── .dockerignore               # Build optimization
 ├── activate-multisite.sh           # Manual multisite activation script
+├── MULTISITE-SETUP.md              # Detailed setup guide
 ├── README.md                       # This file
 └── .gitignore                      # Git ignore rules
 ```
@@ -234,6 +220,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - **Issues:** [GitHub Issues](https://github.com/yourusername/wordpress-multisite-docker/issues)
 - **Discussions:** [GitHub Discussions](https://github.com/yourusername/wordpress-multisite-docker/discussions)
+- **Documentation:** [MULTISITE-SETUP.md](MULTISITE-SETUP.md)
 
 ---
 
