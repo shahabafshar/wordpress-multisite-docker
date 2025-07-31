@@ -195,14 +195,29 @@ wordpress-multisite-docker/
 ├── docker-compose.yml              # WordPress multisite configuration
 ├── env.example                     # Environment template
 ├── nginx/
-│   ├── Dockerfile                  # Custom Nginx image
-│   ├── default.conf                # Nginx configuration
-│   └── .dockerignore               # Build optimization
+│   └── default.conf                # Nginx configuration (mounted to container)
+├── logs/
+│   └── nginx/                      # Nginx logs (mounted from container)
 ├── activate-multisite.sh           # Manual multisite activation script
-├── MULTISITE-SETUP.md              # Detailed setup guide
 ├── README.md                       # This file
 └── .gitignore                      # Git ignore rules
 ```
+
+## 🔧 Volume Mappings
+
+The following directories are mounted for easy access and debugging:
+
+- **`./nginx/`** → `/etc/nginx/conf.d/` (read-only)
+  - Edit Nginx configuration directly on the server
+  - Changes require container restart: `docker-compose restart nginx`
+
+- **`./logs/nginx/`** ← `/var/log/nginx/` (read-write)
+  - Access Nginx logs directly on the server
+  - Real-time log monitoring: `tail -f logs/nginx/access.log`
+
+- **`./wp-content/`** → `/var/www/html/wp-content/` (read-write)
+  - Direct access to WordPress content
+  - No container restart needed for file changes
 
 ## 🤝 Contributing
 

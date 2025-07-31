@@ -67,9 +67,7 @@ services:
 
   # ── NGINX ──
   nginx:
-    build:
-      context: ./nginx
-      dockerfile: Dockerfile
+    image: nginx:alpine
     restart: unless-stopped
     depends_on:
       - wordpress
@@ -78,6 +76,8 @@ services:
     volumes:
       - wordpress_data:/var/www/html
       - nginx_logs:/var/log/nginx
+      - ./nginx:/etc/nginx/conf.d:ro
+      - ./logs/nginx:/var/log/nginx:rw
     networks:
       - wordpress_network
 
