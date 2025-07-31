@@ -21,14 +21,12 @@ backup.sql
 # Logs
 *.log
 logs/
-nginx_logs/
 wordpress_logs/
 
 # Docker volumes
 db_data/
 redis_data/
 wordpress_data/
-nginx_logs/
 
 # Temporary files
 *.tmp
@@ -88,10 +86,7 @@ portainer-stack-*.yml
 env.single.example
 docker-compose.single.yml
 
-# Old nginx config files (removed - now embedded)
+# Old nginx config files (removed)
 nginx_config/
 portainer-nginx-config.conf
-PORTAINER-DEPLOYMENT.md
-
-# Nginx configuration (keep the config file)
-# nginx/default.conf should be included in repository 
+PORTAINER-DEPLOYMENT.md 

@@ -1,17 +1,17 @@
 # 🚀 WordPress Multisite Docker Stack
 
-A production-ready WordPress Multisite Docker stack with **fully automated installation**. Just deploy and visit your site - WordPress multisite will be ready instantly! Optimized for performance, security, and popular plugins.
+A production-ready WordPress Docker stack that installs as single-site and easily converts to multisite. Uses WordPress's built-in Apache server for simplicity and reliability. **Deploy with one click in Portainer!**
 
 ## ✨ Features
 
-- ✅ **Fully Automated Multisite** - Complete WordPress multisite setup without any manual steps
+- ✅ **WordPress with Multisite** - Installs single-site, converts to multisite with one script
 - ✅ **MariaDB 11.5** - Optimized database
 - ✅ **Redis** - Object caching for performance
-- ✅ **Nginx** - Optimized for WordPress and plugins
-- ✅ **PHP 8.4-FPM** - Latest PHP with FPM
+- ✅ **Apache (Built-in)** - WordPress's native web server
+- ✅ **PHP Latest** - Latest PHP with Apache
 - ✅ **Plugin Optimized** - Wordfence, Yoast SEO, WooCommerce ready
-- ✅ **Security Hardened** - Rate limiting, security headers
-- ✅ **Performance Optimized** - Gzip, caching, compression
+- ✅ **Security Hardened** - WordPress security best practices
+- ✅ **Performance Optimized** - Redis caching, optimized database
 - ✅ **Portainer Ready** - Deploy with one click
 
 ## 🚀 Quick Start
@@ -34,20 +34,18 @@ cp env.example .env
 docker-compose up -d
 ```
 
-### 2. That's it! 🎉
+### 2. Complete WordPress Installation
+1. **Visit your site:** `http://localhost:8080` (or your domain)
+2. **Complete WordPress setup** using standard installation wizard
+3. **Use admin credentials** from your `.env` file
 
-**Your WordPress Multisite is automatically ready:**
-- **Main site:** `http://localhost:8080` (or your domain)
-- **Network Admin:** `http://localhost:8080/wp-admin/network/`
-- **Login:** Use credentials from your `.env` file
+### 3. Convert to Multisite (Optional)
+```bash
+# After WordPress is installed and working
+./activate-multisite.sh
+```
 
-The system automatically:
-- ✅ Installs WordPress
-- ✅ Converts to multisite network
-- ✅ Configures all necessary settings
-- ✅ Creates proper `.htaccess` rules
-
-**No manual steps required!** Just deploy and use.
+🎉 **Your multisite network is ready!** Access Network Admin at `/wp-admin/network/`
 
 ## 🔧 Configuration
 
@@ -63,40 +61,47 @@ MYSQL_ROOT_PASSWORD=your-secure-password
 # Redis
 REDIS_VERSION=alpine
 
-# WordPress Multisite settings
+# WordPress installation settings
+WORDPRESS_TITLE=WordPress Multisite
+WORDPRESS_ADMIN_USER=admin
+WORDPRESS_ADMIN_PASSWORD=securepassword123
+WORDPRESS_ADMIN_EMAIL=admin@yourdomain.com
+
+# WordPress Multisite settings (for activation script)
 SUBDOMAIN_INSTALL=false
 DOMAIN_CURRENT_SITE=yourdomain.com
 PATH_CURRENT_SITE=/
 SITE_ID_CURRENT_SITE=1
 BLOG_ID_CURRENT_SITE=1
 
-# NGINX exposure
-NGINX_LOCAL_PORT=8080
+# WordPress exposure
+WORDPRESS_LOCAL_PORT=8080
 MARIADB_VERSION=11.5
 ```
 
 ### Port Configuration
-- **Nginx:** `8080:80` (change in `.env` if needed)
+- **WordPress:** `8080:80` (change in `.env` if needed)
 - **Database:** Internal only (no external access)
 - **Redis:** Internal only (no external access)
 
 ## 🏗️ Architecture
 
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Nginx (8080)  │    │  WordPress      │    │   MariaDB       │
-│   - Reverse     │◄──►│  PHP 8.4-FPM    │◄──►│   - Database    │
-│   - Static      │    │  - Multisite    │    │   - Internal    │
-│   - Security    │    │  - Plugins      │    │   - Optimized   │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-                                │
-                                ▼
-                       ┌─────────────────┐
-                       │   Redis         │
-                       │   - Caching     │
-                       │   - Sessions    │
-                       │   - Internal    │
-                       └─────────────────┘
+┌─────────────────┐    ┌─────────────────┐
+│   WordPress     │    │   MariaDB       │
+│   - Apache      │◄──►│   - Database    │
+│   - PHP Latest  │    │   - Internal    │
+│   - Multisite   │    │   - Optimized   │
+│   - Port 8080   │    │                 │
+└─────────────────┘    └─────────────────┘
+         │
+         ▼
+┌─────────────────┐
+│   Redis         │
+│   - Caching     │
+│   - Sessions    │
+│   - Internal    │
+└─────────────────┘
 ```
 
 ## 🚀 Automatic Setup

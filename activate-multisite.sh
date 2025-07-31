@@ -13,7 +13,7 @@ if [ -f .env ]; then
 fi
 
 # Get WordPress container name
-CONTAINER_NAME=$(docker ps --filter "ancestor=wordpress:php8.4-fpm" --format "{{.Names}}" | head -1)
+CONTAINER_NAME=$(docker ps --filter "ancestor=wordpress:latest" --format "{{.Names}}" | head -1)
 
 if [ -z "$CONTAINER_NAME" ]; then
     echo "❌ WordPress container not found!"

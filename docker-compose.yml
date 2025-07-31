@@ -24,11 +24,13 @@ services:
 
   # ── WORDPRESS ──
   wordpress:
-    image: wordpress:php8.4-fpm
+    image: wordpress:latest
     restart: unless-stopped
     depends_on:
       - db
       - redis
+    ports:
+      - "8080:80"
     environment:
       WORDPRESS_DB_HOST: ${WORDPRESS_DB_HOST}
       WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME}
@@ -58,33 +60,12 @@ services:
     networks:
       - wordpress_network
 
-  # ── NGINX ──
-  nginx:
-    build:
-      context: ./nginx
-      dockerfile: Dockerfile
-    restart: unless-stopped
-    depends_on:
-      - wordpress
-    ports:
-      - "8080:80"
-    volumes:
-      - wordpress_data:/var/www/html
-      - nginx_logs:/var/log/nginx
-      - nginx_conf:/etc/nginx/conf.d  
-    networks:
-      - wordpress_network
-
 volumes:
   db_data:
     driver: local
   redis_data:
     driver: local
   wordpress_data:
-    driver: local
-  nginx_logs:
-    driver: local
-  nginx_conf:
     driver: local
 
 networks:
