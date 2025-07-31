@@ -52,11 +52,13 @@ The system automatically:
 ## 🔧 Configuration
 
 ### Nginx Configuration
-- **File:** `nginx/default.conf` (mounted to container)
+- **File:** `nginx/default.conf` (directory mounted to container)
+- **Mount:** `./nginx:/etc/nginx/conf.d` (entire directory)
 - **To modify:** Edit the file and restart nginx: `docker-compose restart nginx`
 - **To view:** `cat nginx/default.conf`
 - **Helper script:** `./nginx-config.sh` (view, edit, reload, test)
 - **Real-time changes:** No rebuild needed, just restart the nginx service
+- **Portainer compatible:** Directory mount works reliably in all environments
 
 ### Environment Variables
 Edit `.env` file to customize your setup:
