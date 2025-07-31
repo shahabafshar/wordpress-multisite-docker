@@ -65,20 +65,20 @@ services:
     networks:
       - wordpress_network
 
-      # ── NGINX ──
-    nginx:
-      image: nginx:alpine
-      restart: unless-stopped
-      depends_on:
-        - wordpress
-      ports:
-        - "8080:80"
-      volumes:
-        - wordpress_data:/var/www/html
-        - nginx_logs:/var/log/nginx
-        - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
-      networks:
-        - wordpress_network
+  # ── NGINX ──
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    depends_on:
+      - wordpress
+    ports:
+      - "8080:80"
+    volumes:
+      - wordpress_data:/var/www/html
+      - nginx_logs:/var/log/nginx
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - wordpress_network
 
 volumes:
   db_data:
