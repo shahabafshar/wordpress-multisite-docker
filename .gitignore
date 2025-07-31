@@ -20,9 +20,6 @@ backup.sql
 
 # Logs
 *.log
-logs/nginx/*.log
-logs/nginx/*.access
-logs/nginx/*.error
 logs/
 nginx_logs/
 wordpress_logs/
