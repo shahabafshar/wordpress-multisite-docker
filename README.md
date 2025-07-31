@@ -51,17 +51,25 @@ The system automatically:
 
 ## 🔧 Configuration
 
-### Nginx Configuration
-- **File:** `nginx/default.conf` (directory mounted to container)
-- **Mount:** `./nginx:/etc/nginx/conf.d` (entire directory)
-- **To modify:** Edit the file and restart nginx: `docker-compose restart nginx`
-- **To view:** `cat nginx/default.conf`
-- **Helper script:** `./nginx-config.sh` (view, edit, reload, test)
-- **Real-time changes:** No rebuild needed, just restart the nginx service
-- **Portainer compatible:** Directory mount works reliably in all environments
-
 ### Environment Variables
 Edit `.env` file to customize your setup:
+
+### Nginx Configuration
+The Nginx configuration is mounted from `./nginx/default.conf` and can be edited directly on the host:
+
+```bash
+# Edit Nginx configuration
+nano nginx/default.conf
+
+# Reload Nginx after changes
+docker-compose restart nginx
+```
+
+**Key configuration features:**
+- WordPress multisite support (subdirectory)
+- Security headers and rate limiting
+- Performance optimizations (Gzip, caching)
+- Plugin compatibility (Yoast SEO, Wordfence, WooCommerce)
 
 ```bash
 # Database settings
@@ -113,7 +121,7 @@ MARIADB_VERSION=11.5
 The stack automatically:
 1. ✅ **Creates database** with proper credentials
 2. ✅ **Installs WordPress** with multisite support ready
-3. ✅ **Mounts Nginx config** for easy customization
+3. ✅ **Builds custom Nginx image** with optimized configuration
 4. ✅ **Sets up Redis** for caching
 5. ✅ **Applies security** headers and rate limiting
 6. ✅ **Optimizes for plugins** (Wordfence, Yoast, WooCommerce)
@@ -188,9 +196,9 @@ docker exec -it CONTAINER_NAME mysqldump -u root -p wordpress > backup.sql
 - Verify network connectivity between containers
 
 ### Multisite Setup Issues
-- Follow the [MULTISITE-SETUP.md](MULTISITE-SETUP.md) guide
-- Run multisite conversion manually if needed
+- Run `./activate-multisite.sh` after WordPress installation
 - Check `.htaccess` file exists and has correct permissions
+- Verify multisite constants are added to wp-config.php
 
 ### Performance Issues
 - Check Redis container is running
@@ -202,12 +210,12 @@ docker exec -it CONTAINER_NAME mysqldump -u root -p wordpress > backup.sql
 ```
 wordpress-multisite-docker/
 ├── docker-compose.yml              # WordPress multisite configuration
-  ├── env.example                     # Environment template
-  ├── nginx/
-  │   └── default.conf                # Nginx configuration (mounted to container)
-  ├── activate-multisite.sh           # Manual multisite activation script
-  ├── README.md                       # This file
-  └── .gitignore                      # Git ignore rules
+├── env.example                     # Environment template
+├── nginx/
+│   └── default.conf                # Nginx configuration (editable on host)
+├── activate-multisite.sh           # Manual multisite activation script
+├── README.md                       # This file
+└── .gitignore                      # Git ignore rules
 ```
 
 ## 🤝 Contributing
@@ -226,7 +234,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - **Issues:** [GitHub Issues](https://github.com/yourusername/wordpress-multisite-docker/issues)
 - **Discussions:** [GitHub Discussions](https://github.com/yourusername/wordpress-multisite-docker/discussions)
-- **Documentation:** [MULTISITE-SETUP.md](MULTISITE-SETUP.md)
 
 ---
 
