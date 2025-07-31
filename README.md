@@ -51,6 +51,13 @@ The system automatically:
 
 ## 🔧 Configuration
 
+### Nginx Configuration
+- **File:** `nginx/default.conf` (mounted to container)
+- **To modify:** Edit the file and restart nginx: `docker-compose restart nginx`
+- **To view:** `cat nginx/default.conf`
+- **Helper script:** `./nginx-config.sh` (view, edit, reload, test)
+- **Real-time changes:** No rebuild needed, just restart the nginx service
+
 ### Environment Variables
 Edit `.env` file to customize your setup:
 
@@ -104,7 +111,7 @@ MARIADB_VERSION=11.5
 The stack automatically:
 1. ✅ **Creates database** with proper credentials
 2. ✅ **Installs WordPress** with multisite support ready
-3. ✅ **Builds custom Nginx image** with optimized configuration
+3. ✅ **Mounts Nginx config** for easy customization
 4. ✅ **Sets up Redis** for caching
 5. ✅ **Applies security** headers and rate limiting
 6. ✅ **Optimizes for plugins** (Wordfence, Yoast, WooCommerce)
@@ -193,15 +200,12 @@ docker exec -it CONTAINER_NAME mysqldump -u root -p wordpress > backup.sql
 ```
 wordpress-multisite-docker/
 ├── docker-compose.yml              # WordPress multisite configuration
-├── env.example                     # Environment template
-├── nginx/
-│   ├── Dockerfile                  # Custom Nginx image
-│   ├── default.conf                # Nginx configuration
-│   └── .dockerignore               # Build optimization
-├── activate-multisite.sh           # Manual multisite activation script
-├── MULTISITE-SETUP.md              # Detailed setup guide
-├── README.md                       # This file
-└── .gitignore                      # Git ignore rules
+  ├── env.example                     # Environment template
+  ├── nginx/
+  │   └── default.conf                # Nginx configuration (mounted to container)
+  ├── activate-multisite.sh           # Manual multisite activation script
+  ├── README.md                       # This file
+  └── .gitignore                      # Git ignore rules
 ```
 
 ## 🤝 Contributing
