@@ -68,7 +68,7 @@ services:
 
   # ── WP-CLI INIT ──
   wp-cli-init:
-    image: wordpress:cli:${WP_CLI_VERSION:-latest}
+    image: wordpress:cli
     restart: "no"
     depends_on:
       - db
