@@ -7,6 +7,7 @@ A production-ready WordPress Docker stack with **automatic WordPress Multisite i
 - ✅ **Fully Automated Multisite** - WordPress Multisite installs and configures automatically
 - ✅ **Essential Plugins Included** - Wordfence, Yoast SEO, Contact Form 7, Google Site Kit, UpdraftPlus, NS Cloner, WooCommerce, Elementor
 - ✅ **Zero Manual Steps** - No activation scripts or manual configuration needed
+- ✅ **Error-Resilient Installation** - Plugin/theme failures won't stop the setup process
 - ✅ **MariaDB 11.5** - Optimized database backend
 - ✅ **Redis Caching** - Built-in performance optimization
 - ✅ **WP-CLI Integration** - Automatic setup and configuration
@@ -113,6 +114,15 @@ INSTALL_NS_CLONER=true
 
 **Note:** Some plugins (like WP Rocket and premium versions) may require licenses for full functionality. The stack installs the free versions by default.
 
+### Error Handling
+The installation process includes comprehensive error handling:
+- **⚠️ Plugin failures** - If a plugin fails to install, the process continues with a warning
+- **⚠️ Theme failures** - If a theme fails to install, the process continues with a warning
+- **⚠️ Configuration failures** - If settings fail to apply, the process continues with a warning
+- **📋 Installation summary** - Final summary shows what was successfully installed
+
+Check the `wp-cli-init` container logs to see any warnings or failed installations.
+
 ## 🏗️ Architecture
 
 ```
@@ -151,6 +161,7 @@ The stack automatically:
 6. ✅ **Installs essential plugins** (Wordfence, Yoast SEO, Google Site Kit, UpdraftPlus, NS Cloner, WooCommerce, etc.)
 7. ✅ **Installs essential themes** (Hello Elementor, Twenty Twenty-Four, etc.)
 8. ✅ **Configures Redis** for caching
+9. ✅ **Error handling** - Continues installation even if individual plugins/themes fail
 
 ## 🛠️ Management Commands
 
