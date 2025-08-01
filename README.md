@@ -5,6 +5,7 @@ A production-ready WordPress Docker stack with **automatic WordPress Multisite i
 ## ✨ Features
 
 - ✅ **Fully Automated Multisite** - WordPress Multisite installs and configures automatically
+- ✅ **Essential Plugins Included** - Wordfence, Yoast SEO, Contact Form 7, Google Site Kit, UpdraftPlus, NS Cloner, WooCommerce, Elementor
 - ✅ **Zero Manual Steps** - No activation scripts or manual configuration needed
 - ✅ **MariaDB 11.5** - Optimized database backend
 - ✅ **Redis Caching** - Built-in performance optimization
@@ -67,13 +68,50 @@ MARIADB_VERSION=11.5
 
 ### 3. That's it! 🎉
 
-**WordPress Multisite installs automatically during deployment!**
+**WordPress Multisite installs automatically during deployment with essential plugins!**
 
 - **Main Site:** `https://your-domain.com`
 - **Network Admin:** `https://your-domain.com/wp-admin/network/`
 - **Create subsites** via Network Admin → Sites → Add New
 
 **No manual steps required!** Just deploy and WordPress Multisite is ready to use.
+
+## 📦 Included Plugins & Themes
+
+### Essential Plugins (Network Activated)
+- **🔒 Wordfence** - Security scanning and firewall
+- **📊 Yoast SEO** - Search engine optimization
+- **📧 Contact Form 7** - Contact forms
+- **📊 Google Site Kit** - Google Analytics and Search Console
+- **💾 UpdraftPlus** - Backup and restore
+- **🔄 NS Cloner** - Site cloning for multisite
+- **⚡ WP Rocket** - Performance optimization
+- **🎨 Elementor** - Page builder
+- **🛒 WooCommerce** - E-commerce platform
+
+### Essential Themes
+- **🎨 Hello Elementor** - Default active theme (optimized for Elementor)
+- **🎨 Twenty Twenty-Four** - Alternative theme
+- **🎨 Twenty Twenty-Five** - Additional theme option
+- **🎨 Twenty Twenty-Six** - Additional theme option
+
+All plugins are **network-activated** and available to all subsites in the multisite network.
+
+### Plugin Configuration
+You can control which plugins are installed by setting environment variables in your `.env` file:
+```env
+# Set to false to skip specific plugins
+INSTALL_WORDFENCE=true
+INSTALL_YOAST_SEO=true
+INSTALL_CONTACT_FORM_7=true
+INSTALL_WOOCOMMERCE=true
+INSTALL_ELEMENTOR=true
+INSTALL_GOOGLE_SITE_KIT=true
+INSTALL_UPDRAFTPLUS=true
+INSTALL_NS_CLONER=true
+```
+
+**Note:** Some plugins (like WP Rocket and premium versions) may require licenses for full functionality. The stack installs the free versions by default.
 
 ## 🏗️ Architecture
 
@@ -110,7 +148,9 @@ The stack automatically:
 3. ✅ **Enables multisite** via WP-CLI
 4. ✅ **Configures all constants** in wp-config.php
 5. ✅ **Sets up .htaccess** with proper rewrite rules
-6. ✅ **Configures Redis** for caching
+6. ✅ **Installs essential plugins** (Wordfence, Yoast SEO, Google Site Kit, UpdraftPlus, NS Cloner, WooCommerce, etc.)
+7. ✅ **Installs essential themes** (Hello Elementor, Twenty Twenty-Four, etc.)
+8. ✅ **Configures Redis** for caching
 
 ## 🛠️ Management Commands
 

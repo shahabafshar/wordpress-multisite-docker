@@ -74,6 +74,14 @@ services:
       WORDPRESS_ADMIN_EMAIL: ${WORDPRESS_ADMIN_EMAIL:-admin@example.com}
       DOMAIN_CURRENT_SITE: ${DOMAIN_CURRENT_SITE:-localhost:8080}
       SUBDOMAIN_INSTALL: ${SUBDOMAIN_INSTALL:-false}
+      INSTALL_WORDFENCE: ${INSTALL_WORDFENCE:-true}
+      INSTALL_YOAST_SEO: ${INSTALL_YOAST_SEO:-true}
+      INSTALL_CONTACT_FORM_7: ${INSTALL_CONTACT_FORM_7:-true}
+      INSTALL_WOOCOMMERCE: ${INSTALL_WOOCOMMERCE:-true}
+      INSTALL_ELEMENTOR: ${INSTALL_ELEMENTOR:-true}
+      INSTALL_GOOGLE_SITE_KIT: ${INSTALL_GOOGLE_SITE_KIT:-true}
+      INSTALL_UPDRAFTPLUS: ${INSTALL_UPDRAFTPLUS:-true}
+      INSTALL_NS_CLONER: ${INSTALL_NS_CLONER:-true}
       HOME: /tmp
     volumes:
       - wordpress_data:/var/www/html
@@ -139,7 +147,30 @@ services:
           fi &&
           echo '🔧 Verifying multisite setup...' &&
           wp core is-installed --network --allow-root &&
-          echo '✅ WordPress Multisite enabled successfully!';
+          echo '📦 Installing essential plugins...' &&
+          if [ \"$${INSTALL_WORDFENCE:-true}\" = \"true\" ]; then wp plugin install wordfence --activate-network --allow-root; fi &&
+          if [ \"$${INSTALL_YOAST_SEO:-true}\" = \"true\" ]; then wp plugin install yoast-seo --activate-network --allow-root; fi &&
+          if [ \"$${INSTALL_CONTACT_FORM_7:-true}\" = \"true\" ]; then wp plugin install contact-form-7 --activate-network --allow-root; fi &&
+          if [ \"$${INSTALL_GOOGLE_SITE_KIT:-true}\" = \"true\" ]; then wp plugin install google-site-kit --activate-network --allow-root; fi &&
+          if [ \"$${INSTALL_UPDRAFTPLUS:-true}\" = \"true\" ]; then wp plugin install updraftplus --activate-network --allow-root; fi &&
+          if [ \"$${INSTALL_NS_CLONER:-true}\" = \"true\" ]; then wp plugin install ns-cloner-site-copier --activate-network --allow-root; fi &&
+          wp plugin install wp-rocket --activate-network --allow-root &&
+          if [ \"$${INSTALL_ELEMENTOR:-true}\" = \"true\" ]; then wp plugin install elementor --activate-network --allow-root; fi &&
+          if [ \"$${INSTALL_WOOCOMMERCE:-true}\" = \"true\" ]; then wp plugin install woocommerce --activate-network --allow-root; fi &&
+          echo '🎨 Installing essential themes...' &&
+          wp theme install twentytwentyfour --allow-root &&
+          wp theme install twentytwentyfive --allow-root &&
+          wp theme install twentytwentysix --allow-root &&
+          wp theme install hello-elementor --activate --allow-root &&
+          echo '🔧 Configuring essential plugins...' &&
+          wp option update blogname \"$${WORDPRESS_TITLE}\" --allow-root &&
+          wp option update blogdescription \"Professional WordPress Multisite Network\" --allow-root &&
+          wp option update users_can_register 1 --allow-root &&
+          wp option update default_role subscriber --allow-root &&
+          echo '🔧 Setting up basic multisite configuration...' &&
+          wp site option update 1 blogname \"$${WORDPRESS_TITLE}\" --allow-root &&
+          wp site option update 1 blogdescription \"Professional WordPress Multisite Network\" --allow-root &&
+          echo '✅ WordPress Multisite enabled successfully with essential plugins!';
         fi
       "
     networks:
