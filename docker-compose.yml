@@ -24,9 +24,7 @@ services:
 
   # ── WORDPRESS ──
   wordpress:
-    build:
-      context: ./wordpress
-      dockerfile: Dockerfile
+    image: wordpress:latest
     restart: unless-stopped
     depends_on:
       - db
