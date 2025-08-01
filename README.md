@@ -120,6 +120,8 @@ The installation process includes comprehensive error handling:
 - **⚠️ Theme failures** - If a theme fails to install, the process continues with a warning
 - **⚠️ Configuration failures** - If settings fail to apply, the process continues with a warning
 - **📋 Installation summary** - Final summary shows what was successfully installed
+- **🔧 Upload directory setup** - Automatically creates and sets permissions for upload directories
+- **✅ Smart installation** - Skips already installed plugins/themes to avoid warnings
 
 Check the `wp-cli-init` container logs to see any warnings or failed installations.
 
