@@ -4,8 +4,7 @@ A production-ready WordPress Docker stack that installs as single-site and easil
 
 ## ✨ Features
 
-- ✅ **Fully Automated WordPress** - Installs automatically during deployment
-- ✅ **WordPress with Multisite** - Installs single-site, converts to multisite with one script
+- ✅ **Fully Automated WordPress Multisite** - Installs and enables multisite automatically during deployment
 - ✅ **MariaDB 11.5** - Optimized database
 - ✅ **Redis** - Object caching for performance
 - ✅ **WP-CLI** - Command-line WordPress management
@@ -38,38 +37,30 @@ docker-compose up -d
 
 ### 2. That's it! 🎉
 
-**WordPress installs automatically during deployment!**
+**WordPress Multisite installs automatically during deployment!**
 - **Site URL:** `http://localhost:8080` (or your domain)
 - **Admin URL:** `http://localhost:8080/wp-admin/`
+- **Network Admin:** `http://localhost:8080/wp-admin/network/`
 - **Username:** Use credentials from your `.env` file
 - **Password:** Use credentials from your `.env` file
 
-**No manual steps required!** Just deploy and WordPress is ready to use.
+**No manual steps required!** Just deploy and WordPress Multisite is ready to use.
 
-### 3. Convert to Multisite (Optional)
+### 3. Multisite is Already Enabled! 🎉
 
-**Option A: Manual Activation (Recommended)**
-1. **Login to WordPress Admin**
-2. **Go to:** Tools → Network Setup
-3. **Choose:** Subdirectory or Subdomain installation
-4. **Click:** Install Network
-5. **Edit wp-config.php** to uncomment multisite constants
-6. **Update .htaccess** with multisite rules
+**WordPress Multisite is automatically enabled during deployment!**
+- **Network Admin:** `http://localhost:8080/wp-admin/network/`
+- **Create New Sites:** Use Network Admin to add sites
+- **Manage Network:** Install network-wide plugins and themes
 
-**Option B: Script Activation**
-```bash
-# After WordPress is installed and working
-./scripts/activate-multisite.sh
-```
+**No additional steps needed!** Your multisite network is ready to use.
 
-🎉 **Your multisite network is ready!** Access Network Admin at `/wp-admin/network/`
+### 📝 Multisite Configuration
 
-### 📝 Manual wp-config.php Editing
-
-After running Network Setup, you'll need to edit `wp-config.php` to uncomment the multisite constants:
+The multisite constants are automatically configured in `wp-config.php`:
 
 ```php
-# Find these lines in wp-config.php and uncomment them:
+# These are automatically set during deployment:
 define('MULTISITE', true);
 define('SUBDOMAIN_INSTALL', false);
 define('DOMAIN_CURRENT_SITE', 'yourdomain.com');
@@ -78,7 +69,7 @@ define('SITE_ID_CURRENT_SITE', 1);
 define('BLOG_ID_CURRENT_SITE', 1);
 ```
 
-**Note:** The multisite constants are already prepared in your `WORDPRESS_CONFIG_EXTRA` - just uncomment the lines you need!
+**Note:** All multisite configuration is handled automatically - no manual editing required!
 
 ## 🔧 Configuration
 
