@@ -4,9 +4,11 @@ A production-ready WordPress Docker stack that installs as single-site and easil
 
 ## ✨ Features
 
+- ✅ **Fully Automated WordPress** - Installs automatically during deployment
 - ✅ **WordPress with Multisite** - Installs single-site, converts to multisite with one script
 - ✅ **MariaDB 11.5** - Optimized database
 - ✅ **Redis** - Object caching for performance
+- ✅ **WP-CLI** - Command-line WordPress management
 - ✅ **Apache (Built-in)** - WordPress's native web server
 - ✅ **PHP Latest** - Latest PHP with Apache
 - ✅ **Plugin Optimized** - Wordfence, Yoast SEO, WooCommerce ready
@@ -34,10 +36,15 @@ cp env.example .env
 docker-compose up -d
 ```
 
-### 2. Complete WordPress Installation
-1. **Visit your site:** `http://localhost:8080` (or your domain)
-2. **Complete WordPress setup** using standard installation wizard
-3. **Use admin credentials** from your `.env` file
+### 2. That's it! 🎉
+
+**WordPress installs automatically during deployment!**
+- **Site URL:** `http://localhost:8080` (or your domain)
+- **Admin URL:** `http://localhost:8080/wp-admin/`
+- **Username:** Use credentials from your `.env` file
+- **Password:** Use credentials from your `.env` file
+
+**No manual steps required!** Just deploy and WordPress is ready to use.
 
 ### 3. Convert to Multisite (Optional)
 
@@ -52,7 +59,7 @@ docker-compose up -d
 **Option B: Script Activation**
 ```bash
 # After WordPress is installed and working
-./activate-multisite.sh
+./scripts/activate-multisite.sh
 ```
 
 🎉 **Your multisite network is ready!** Access Network Admin at `/wp-admin/network/`
@@ -109,6 +116,21 @@ MARIADB_VERSION=11.5
 - **WordPress:** `8080:80` (change in `.env` if needed)
 - **Database:** Internal only (no external access)
 - **Redis:** Internal only (no external access)
+- **WP-CLI:** Internal only (no external access)
+
+### WP-CLI Usage
+```bash
+# Using helper script (recommended)
+./scripts/wp-cli.sh --help
+./scripts/wp-cli.sh plugin list
+./scripts/wp-cli.sh core version
+./scripts/wp-cli.sh user list
+
+# Or directly with docker-compose
+docker-compose exec wp-cli-init wp --help
+docker-compose exec wp-cli-init wp plugin install wordfence --activate
+docker-compose exec wp-cli-init wp core update
+```
 
 ## 🏗️ Architecture
 
@@ -122,12 +144,12 @@ MARIADB_VERSION=11.5
 └─────────────────┘    └─────────────────┘
          │
          ▼
-┌─────────────────┐
-│   Redis         │
-│   - Caching     │
-│   - Sessions    │
-│   - Internal    │
-└─────────────────┘
+┌─────────────────┐    ┌─────────────────┐
+│   Redis         │    │   WP-CLI Init   │
+│   - Caching     │    │   - Auto Setup  │
+│   - Sessions    │    │   - One-time    │
+│   - Internal    │    │   - Internal    │
+└─────────────────┘    └─────────────────┘
 ```
 
 ## 🚀 Automatic Setup

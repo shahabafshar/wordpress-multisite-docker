@@ -89,4 +89,7 @@ docker-compose.single.yml
 # Old nginx config files (removed)
 nginx_config/
 portainer-nginx-config.conf
-PORTAINER-DEPLOYMENT.md 
+PORTAINER-DEPLOYMENT.md
+
+# Scripts (keep in repository)
+# scripts/ directory should be included 
