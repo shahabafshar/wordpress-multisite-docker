@@ -149,19 +149,18 @@ services:
           wp core is-installed --network --allow-root &&
           echo '📦 Installing essential plugins...' &&
           if [ \"$${INSTALL_WORDFENCE:-true}\" = \"true\" ]; then wp plugin install wordfence --activate-network --allow-root || echo '⚠️  Wordfence installation failed, continuing...'; fi &&
-          if [ \"$${INSTALL_YOAST_SEO:-true}\" = \"true\" ]; then wp plugin install yoast-seo --activate-network --allow-root || echo '⚠️  Yoast SEO installation failed, continuing...'; fi &&
+          if [ \"$${INSTALL_YOAST_SEO:-true}\" = \"true\" ]; then wp plugin install wordpress-seo --activate-network --allow-root || echo '⚠️  Yoast SEO installation failed, continuing...'; fi &&
           if [ \"$${INSTALL_CONTACT_FORM_7:-true}\" = \"true\" ]; then wp plugin install contact-form-7 --activate-network --allow-root || echo '⚠️  Contact Form 7 installation failed, continuing...'; fi &&
           if [ \"$${INSTALL_GOOGLE_SITE_KIT:-true}\" = \"true\" ]; then wp plugin install google-site-kit --activate-network --allow-root || echo '⚠️  Google Site Kit installation failed, continuing...'; fi &&
           if [ \"$${INSTALL_UPDRAFTPLUS:-true}\" = \"true\" ]; then wp plugin install updraftplus --activate-network --allow-root || echo '⚠️  UpdraftPlus installation failed, continuing...'; fi &&
           if [ \"$${INSTALL_NS_CLONER:-true}\" = \"true\" ]; then wp plugin install ns-cloner-site-copier --activate-network --allow-root || echo '⚠️  NS Cloner installation failed, continuing...'; fi &&
-          wp plugin install wp-rocket --activate-network --allow-root || echo '⚠️  WP Rocket installation failed, continuing...' &&
+          wp plugin install wp-super-cache --activate-network --allow-root || echo '⚠️  WP Super Cache installation failed, continuing...' &&
           if [ \"$${INSTALL_ELEMENTOR:-true}\" = \"true\" ]; then wp plugin install elementor --activate-network --allow-root || echo '⚠️  Elementor installation failed, continuing...'; fi &&
           if [ \"$${INSTALL_WOOCOMMERCE:-true}\" = \"true\" ]; then wp plugin install woocommerce --activate-network --allow-root || echo '⚠️  WooCommerce installation failed, continuing...'; fi &&
           echo '🎨 Installing essential themes...' &&
-          wp theme install twentytwentyfour --allow-root || echo '⚠️  Twenty Twenty-Four theme installation failed, continuing...' &&
-          wp theme install twentytwentyfive --allow-root || echo '⚠️  Twenty Twenty-Five theme installation failed, continuing...' &&
-          wp theme install twentytwentysix --allow-root || echo '⚠️  Twenty Twenty-Six theme installation failed, continuing...' &&
-          wp theme install hello-elementor --activate --allow-root || echo '⚠️  Hello Elementor theme installation failed, continuing...' &&
+          if ! wp theme is-installed twentytwentyfour --allow-root; then wp theme install twentytwentyfour --allow-root || echo '⚠️  Twenty Twenty-Four theme installation failed, continuing...'; else echo '✅ Twenty Twenty-Four theme already installed'; fi &&
+          if ! wp theme is-installed twentytwentyfive --allow-root; then wp theme install twentytwentyfive --allow-root || echo '⚠️  Twenty Twenty-Five theme installation failed, continuing...'; else echo '✅ Twenty Twenty-Five theme already installed'; fi &&
+          if ! wp theme is-installed hello-elementor --allow-root; then wp theme install hello-elementor --activate --allow-root || echo '⚠️  Hello Elementor theme installation failed, continuing...'; else echo '✅ Hello Elementor theme already installed'; fi &&
           echo '🔧 Configuring essential plugins...' &&
           wp option update blogname \"$${WORDPRESS_TITLE}\" --allow-root || echo '⚠️  Blog name update failed, continuing...' &&
           wp option update blogdescription \"Professional WordPress Multisite Network\" --allow-root || echo '⚠️  Blog description update failed, continuing...' &&
@@ -169,7 +168,7 @@ services:
           wp option update default_role subscriber --allow-root || echo '⚠️  Default role setting failed, continuing...' &&
           echo '🔧 Setting up basic multisite configuration...' &&
           wp site option update 1 blogname \"$${WORDPRESS_TITLE}\" --allow-root || echo '⚠️  Site blog name update failed, continuing...' &&
-          wp site option update 1 blogdescription \"Professional WordPress Multisite Network\" --allow-root || echo '⚠️  Site blog description update failed, continuing...' &&
+          wp site option update 1 blogdescription 'Professional WordPress Multisite Network' --allow-root || echo '⚠️  Site blog description update failed, continuing...' &&
           echo '✅ WordPress Multisite enabled successfully with essential plugins!' &&
           echo '📋 Installation Summary:' &&
           echo '   - WordPress Multisite: ✅ Installed' &&
