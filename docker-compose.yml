@@ -82,7 +82,8 @@ services:
       WORDPRESS_ADMIN_USER: ${WORDPRESS_ADMIN_USER:-admin}
       WORDPRESS_ADMIN_PASSWORD: ${WORDPRESS_ADMIN_PASSWORD:-admin123}
       WORDPRESS_ADMIN_EMAIL: ${WORDPRESS_ADMIN_EMAIL:-admin@example.com}
-      DOMAIN_CURRENT_SITE: ${DOMAIN_CURRENT_SITE:-localhost:${WORDPRESS_LOCAL_PORT:-8080}}
+      DOMAIN_CURRENT_SITE: ${DOMAIN_CURRENT_SITE:-localhost:8080}
+      SUBDOMAIN_INSTALL: ${SUBDOMAIN_INSTALL:-false}
     volumes:
       - wordpress_data:/var/www/html
       - ./wp-content:/var/www/html/wp-content
