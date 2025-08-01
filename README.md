@@ -1,25 +1,24 @@
 # 🚀 WordPress Multisite Docker Stack
 
-A production-ready WordPress Docker stack that installs as single-site and easily converts to multisite. Uses WordPress's built-in Apache server for simplicity and reliability. **Deploy with one click in Portainer!**
+A production-ready WordPress Docker stack with **automatic WordPress Multisite installation**. Deploy with one click in Portainer and get a fully configured multisite network!
 
 ## ✨ Features
 
-- ✅ **Fully Automated WordPress Multisite** - Installs and enables multisite automatically during deployment
-- ✅ **MariaDB 11.5** - Optimized database
-- ✅ **Redis** - Object caching for performance
-- ✅ **WP-CLI** - Command-line WordPress management
+- ✅ **Fully Automated Multisite** - WordPress Multisite installs and configures automatically
+- ✅ **Zero Manual Steps** - No activation scripts or manual configuration needed
+- ✅ **MariaDB 11.5** - Optimized database backend
+- ✅ **Redis Caching** - Built-in performance optimization
+- ✅ **WP-CLI Integration** - Automatic setup and configuration
 - ✅ **Apache (Built-in)** - WordPress's native web server
-- ✅ **PHP Latest** - Latest PHP with Apache
-- ✅ **Plugin Optimized** - Wordfence, Yoast SEO, WooCommerce ready
-- ✅ **Security Hardened** - WordPress security best practices
-- ✅ **Performance Optimized** - Redis caching, optimized database
+- ✅ **HTTPS Ready** - Configured for secure connections
+- ✅ **Editable Volumes** - Easy access to themes, plugins, and uploads
 - ✅ **Portainer Ready** - Deploy with one click
 
 ## 🚀 Quick Start
 
 ### 1. Deploy the Stack
 
-**Option A: Portainer Repository**
+**Option A: Portainer (Recommended)**
 1. **In Portainer:** Stacks → Add Stack → Repository  
 2. **Repository URL:** `https://github.com/yourusername/wordpress-multisite-docker`
 3. **Compose file:** `docker-compose.yml`
@@ -35,54 +34,15 @@ cp env.example .env
 docker-compose up -d
 ```
 
-### 2. That's it! 🎉
+### 2. Configure Environment
 
-**WordPress Multisite installs automatically during deployment!**
-- **Site URL:** `http://localhost:8080` (or your domain)
-- **Admin URL:** `http://localhost:8080/wp-admin/`
-- **Network Admin:** `http://localhost:8080/wp-admin/network/`
-- **Username:** Use credentials from your `.env` file
-- **Password:** Use credentials from your `.env` file
+Edit `.env` file with your settings:
 
-**No manual steps required!** Just deploy and WordPress Multisite is ready to use.
-
-### 3. Multisite is Already Enabled! 🎉
-
-**WordPress Multisite is automatically enabled during deployment!**
-- **Network Admin:** `http://localhost:8080/wp-admin/network/`
-- **Create New Sites:** Use Network Admin to add sites
-- **Manage Network:** Install network-wide plugins and themes
-
-**No additional steps needed!** Your multisite network is ready to use.
-
-**Note:** You may see warnings about upload directory permissions during installation. This is normal and doesn't affect functionality - WordPress will create upload directories as needed.
-
-### 📝 Multisite Configuration
-
-The multisite constants are automatically configured in `wp-config.php`:
-
-```php
-# These are automatically set during deployment:
-define('MULTISITE', true);
-define('SUBDOMAIN_INSTALL', false);
-define('DOMAIN_CURRENT_SITE', 'yourdomain.com');
-define('PATH_CURRENT_SITE', '/');
-define('SITE_ID_CURRENT_SITE', 1);
-define('BLOG_ID_CURRENT_SITE', 1);
-```
-
-**Note:** All multisite configuration is handled automatically - no manual editing required!
-
-## 🔧 Configuration
-
-### Environment Variables
-Edit `.env` file to customize your setup:
-
-```bash
+```env
 # Database settings
 WORDPRESS_DB_HOST=db
 WORDPRESS_DB_NAME=wordpress
-MYSQL_ROOT_PASSWORD=your-secure-password
+MYSQL_ROOT_PASSWORD=your-strong-password
 
 # Redis
 REDIS_VERSION=alpine
@@ -91,11 +51,11 @@ REDIS_VERSION=alpine
 WORDPRESS_TITLE=WordPress Multisite
 WORDPRESS_ADMIN_USER=admin
 WORDPRESS_ADMIN_PASSWORD=securepassword123
-WORDPRESS_ADMIN_EMAIL=admin@yourdomain.com
+WORDPRESS_ADMIN_EMAIL=admin@your-domain.com
 
-# WordPress Multisite settings (for activation script)
+# WordPress Multisite settings
 SUBDOMAIN_INSTALL=false
-DOMAIN_CURRENT_SITE=yourdomain.com
+DOMAIN_CURRENT_SITE=your-domain.com
 PATH_CURRENT_SITE=/
 SITE_ID_CURRENT_SITE=1
 BLOG_ID_CURRENT_SITE=1
@@ -105,25 +65,15 @@ WORDPRESS_LOCAL_PORT=8080
 MARIADB_VERSION=11.5
 ```
 
-### Port Configuration
-- **WordPress:** `8080:80` (change in `.env` if needed)
-- **Database:** Internal only (no external access)
-- **Redis:** Internal only (no external access)
-- **WP-CLI:** Internal only (no external access)
+### 3. That's it! 🎉
 
-### WP-CLI Usage
-```bash
-# Using helper script (recommended)
-./scripts/wp-cli.sh --help
-./scripts/wp-cli.sh plugin list
-./scripts/wp-cli.sh core version
-./scripts/wp-cli.sh user list
+**WordPress Multisite installs automatically during deployment!**
 
-# Or directly with docker-compose
-docker-compose exec wp-cli-init wp --help
-docker-compose exec wp-cli-init wp plugin install wordfence --activate
-docker-compose exec wp-cli-init wp core update
-```
+- **Main Site:** `https://your-domain.com`
+- **Network Admin:** `https://your-domain.com/wp-admin/network/`
+- **Create subsites** via Network Admin → Sites → Add New
+
+**No manual steps required!** Just deploy and WordPress Multisite is ready to use.
 
 ## 🏗️ Architecture
 
@@ -145,71 +95,39 @@ docker-compose exec wp-cli-init wp core update
 └─────────────────┘    └─────────────────┘
 ```
 
-## 🚀 Automatic Setup
+## 🔧 Configuration
+
+### Port Configuration
+- **WordPress:** `8080:80` (change in `.env` if needed)
+- **Database:** Internal only (no external access)
+- **Redis:** Internal only (no external access)
+
+### Automatic Setup Process
 
 The stack automatically:
 1. ✅ **Creates database** with proper credentials
-2. ✅ **Installs WordPress** with multisite support ready
-3. ✅ **Builds custom Nginx image** with optimized configuration
-4. ✅ **Sets up Redis** for caching
-5. ✅ **Applies security** headers and rate limiting
-6. ✅ **Optimizes for plugins** (Wordfence, Yoast, WooCommerce)
-
-## 📋 Post-Deployment
-
-### 1. Access WordPress
-- **URL:** `http://your-server:8080`
-- **Complete WordPress installation**
-- **Create admin account**
-
-### 2. Activate Multisite (Optional)
-- **Complete WordPress installation** first
-- **Run activation script:** `./activate-multisite.sh`
-- **Check admin bar** for "My Sites"
-- **Access Network Admin** at `/wp-admin/network/`
-- **Create additional sites** as needed
-
-### 3. Plugin Installation
-The stack is optimized for:
-- ✅ **Wordfence** - Security scanning
-- ✅ **Yoast SEO** - XML sitemaps, caching
-- ✅ **WooCommerce** - E-commerce
-- ✅ **Contact Form 7** - AJAX support
-- ✅ **Caching plugins** - Performance
-
-## 🔒 Security Features
-
-- **Rate limiting** on wp-login.php and wp-admin
-- **Security headers** (HSTS, CSP, XSS Protection)
-- **File access restrictions** (wp-config.php, .htaccess)
-- **PHP execution blocked** in uploads
-- **Sensitive file blocking** (readme, license files)
-
-## ⚡ Performance Features
-
-- **Gzip compression** for all text files
-- **Static file caching** (1 year expiry)
-- **Font optimization** (woff, woff2)
-- **XML sitemap caching** (1 day)
-- **JSON API caching** (1 hour)
-- **Redis object caching**
+2. ✅ **Installs WordPress** with multisite support
+3. ✅ **Enables multisite** via WP-CLI
+4. ✅ **Configures all constants** in wp-config.php
+5. ✅ **Sets up .htaccess** with proper rewrite rules
+6. ✅ **Configures Redis** for caching
 
 ## 🛠️ Management Commands
 
-### Create New Site
+### WP-CLI Commands
 ```bash
-docker exec -it CONTAINER_NAME wp site create --slug=newsite --title="New Site" --path=/var/www/html --allow-root
-```
+# Access WP-CLI in the container
+docker exec -it CONTAINER_NAME wp --help
 
-### List All Sites
-```bash
-docker exec -it CONTAINER_NAME wp site list --path=/var/www/html --allow-root
-```
+# List all sites
+docker exec -it CONTAINER_NAME wp site list --allow-root
 
-### Update WordPress
-```bash
-docker exec -it CONTAINER_NAME wp core update --path=/var/www/html --allow-root
-docker exec -it CONTAINER_NAME wp core update-db --path=/var/www/html --allow-root
+# Create new site
+docker exec -it CONTAINER_NAME wp site create --slug=newsite --title="New Site" --allow-root
+
+# Update WordPress
+docker exec -it CONTAINER_NAME wp core update --allow-root
+docker exec -it CONTAINER_NAME wp core update-db --allow-root
 ```
 
 ### Backup Database
@@ -219,35 +137,32 @@ docker exec -it CONTAINER_NAME mysqldump -u root -p wordpress > backup.sql
 
 ## 🔍 Troubleshooting
 
-### Database Connection Issues
+### Common Issues
+
+**Database Connection Issues**
 - Check `.env` file has correct database credentials
 - Ensure MariaDB container is running
 - Verify network connectivity between containers
 
-### Multisite Setup Issues
-- Follow the [MULTISITE-SETUP.md](MULTISITE-SETUP.md) guide
-- Run multisite conversion manually if needed
-- Check `.htaccess` file exists and has correct permissions
+**Multisite Setup Issues**
+- Ensure `DOMAIN_CURRENT_SITE` in `.env` matches your actual domain
+- Check that HTTPS is properly configured if using SSL
+- Verify `.htaccess` file exists and has correct permissions
 
-### Performance Issues
+**Performance Issues**
 - Check Redis container is running
-- Verify Nginx configuration is loaded
 - Monitor container resource usage
+- Verify caching is working properly
 
 ## 📁 File Structure
 
 ```
 wordpress-multisite-docker/
-├── docker-compose.yml              # WordPress multisite configuration
+├── docker-compose.yml              # Main stack configuration
 ├── env.example                     # Environment template
-├── nginx/
-│   ├── Dockerfile                  # Custom Nginx image
-│   ├── default.conf                # Nginx configuration
-│   └── .dockerignore               # Build optimization
-├── activate-multisite.sh           # Manual multisite activation script
-├── MULTISITE-SETUP.md              # Detailed setup guide
 ├── README.md                       # This file
-└── .gitignore                      # Git ignore rules
+├── .gitignore                      # Git ignore rules
+└── LICENSE                         # License file
 ```
 
 ## 🤝 Contributing
@@ -266,7 +181,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - **Issues:** [GitHub Issues](https://github.com/yourusername/wordpress-multisite-docker/issues)
 - **Discussions:** [GitHub Discussions](https://github.com/yourusername/wordpress-multisite-docker/discussions)
-- **Documentation:** [MULTISITE-SETUP.md](MULTISITE-SETUP.md)
 
 ---
 

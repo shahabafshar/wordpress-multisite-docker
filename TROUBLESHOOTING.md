@@ -2,59 +2,35 @@
 
 ## Common Issues and Solutions
 
-### 1. Nginx Configuration Not Found
+### 1. WordPress Multisite Not Working
 
-**Error:**
-```
-10-listen-on-ipv6-by-default.sh: info: /etc/nginx/conf.d/default.conf is not a file or does not exist
-```
-
-**Cause:** The Nginx configuration file is not being loaded properly.
+**Symptoms:**
+- Redirect loops on subsite admin
+- 404 errors for CSS/JS files
+- "Constant WP_ALLOW_MULTISITE already defined" errors
 
 **Solutions:**
 
-#### Option A: Check File Exists
-```bash
-# Verify the nginx directory and file exist
-ls -la nginx/
-cat nginx/default.conf
+#### Check Domain Configuration
+Ensure your `.env` file has the correct domain:
+```env
+DOMAIN_CURRENT_SITE=your-actual-domain.com
 ```
 
-#### Option B: Manual Configuration (Portainer)
-If deploying via Portainer repository and the build fails:
+#### Verify HTTPS Configuration
+If using HTTPS, ensure WordPress is configured for it:
+```bash
+# Check current site URL
+docker exec -it CONTAINER_NAME wp option get home --allow-root
+docker exec -it CONTAINER_NAME wp option get siteurl --allow-root
+```
 
-1. **Check build context:**
-   ```bash
-   # Verify the nginx directory structure
-   ls -la nginx/
-   cat nginx/Dockerfile
-   ```
-
-2. **Build manually:**
-   ```bash
-   # Build the Nginx image locally first
-   docker build -t custom-nginx ./nginx
-   ```
-
-3. **Use pre-built image:**
-   ```yaml
-   # Temporarily use a different approach
-   nginx:
-     image: nginx:alpine
-     volumes:
-       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
-   ```
-
-#### Option C: Embedded Configuration
-If build continues to fail, embed the configuration directly:
-
-```yaml
-nginx:
-  image: nginx:alpine
-  volumes:
-    - type: bind
-      source: ./nginx/default.conf
-      target: /etc/nginx/conf.d/default.conf
+#### Check Multisite Constants
+Verify multisite is properly configured:
+```bash
+# Check wp-config.php constants
+docker exec -it CONTAINER_NAME wp config get MULTISITE --allow-root
+docker exec -it CONTAINER_NAME wp config get DOMAIN_CURRENT_SITE --allow-root
 ```
 
 ### 2. Database Connection Issues
@@ -69,19 +45,35 @@ Access denied for user 'wpuser'@'172.19.0.4' (using password: YES)
 - Ensure MariaDB container is running
 - Check network connectivity between containers
 
-### 3. WordPress Multisite Setup Issues
+### 3. WP-CLI Initialization Issues
 
 **Error:**
 ```
-Table 'wordpress.wp_blogs' doesn't exist
+wp-cli-init container exits with error
 ```
 
-**Solution:**
-1. Complete WordPress installation first
-2. Convert to multisite:
-   ```bash
-   docker exec -it CONTAINER_NAME wp core multisite-convert --path=/var/www/html --allow-root
-   ```
+**Solutions:**
+
+#### Check Container Logs
+```bash
+docker-compose logs wp-cli-init
+```
+
+#### Verify Database is Ready
+The WP-CLI container waits for the database. If it fails:
+```bash
+# Check database container
+docker-compose logs db
+
+# Restart the stack
+docker-compose restart
+```
+
+#### Check File Permissions
+```bash
+# Verify WordPress files are accessible
+docker exec -it CONTAINER_NAME ls -la /var/www/html/
+```
 
 ### 4. Port Access Issues
 
@@ -92,7 +84,7 @@ Table 'wordpress.wp_blogs' doesn't exist
 #### Check Container Status
 ```bash
 docker ps
-docker logs CONTAINER_NAME-nginx-1
+docker logs CONTAINER_NAME-wordpress-1
 ```
 
 #### Verify Port Mapping
@@ -103,23 +95,22 @@ netstat -tlnp | grep 8080
 
 #### Test Container Directly
 ```bash
-# Test nginx inside container
-docker exec -it CONTAINER_NAME-nginx-1 nginx -t
-docker exec -it CONTAINER_NAME-nginx-1 curl localhost
+# Test WordPress inside container
+docker exec -it CONTAINER_NAME curl localhost
 ```
 
 ### 5. Permission Issues
 
 **Error:**
 ```
-Permission denied
+Warning: Unable to create directory wp-content/uploads/2025/08
 ```
 
 **Solution:**
+This is normal for host-mounted volumes. WordPress will create directories as needed:
 ```bash
-# Fix file permissions
-chmod 644 nginx/default.conf
-chmod 755 nginx/
+# WordPress handles this automatically
+# No manual intervention required
 ```
 
 ### 6. Memory/Resource Issues
@@ -131,8 +122,8 @@ Container killed due to memory limit
 
 **Solution:**
 - Increase Docker memory limits
-- Reduce worker processes in Nginx
-- Optimize PHP-FPM settings
+- Optimize PHP settings
+- Monitor resource usage
 
 ## Debugging Commands
 
@@ -142,9 +133,9 @@ Container killed due to memory limit
 docker-compose logs
 
 # Specific service
-docker-compose logs nginx
 docker-compose logs wordpress
 docker-compose logs db
+docker-compose logs wp-cli-init
 ```
 
 ### Check Container Status
@@ -164,8 +155,8 @@ docker exec -it CONTAINER_NAME mysql -u root -p -e "SHOW DATABASES;"
 # Test Redis connection
 docker exec -it CONTAINER_NAME-redis-1 redis-cli ping
 
-# Test Nginx configuration
-docker exec -it CONTAINER_NAME-nginx-1 nginx -t
+# Test WordPress
+docker exec -it CONTAINER_NAME wp core version --allow-root
 ```
 
 ### Check Network
@@ -209,19 +200,19 @@ docker network inspect wordpress-multisite-docker_wordpress_network
 # Check resource usage
 docker stats
 
-# Check Nginx access logs
-docker exec -it CONTAINER_NAME-nginx-1 tail -f /var/log/nginx/access.log
+# Check WordPress logs
+docker exec -it CONTAINER_NAME tail -f /var/log/apache2/access.log
 ```
 
 **Solutions:**
 - Enable Redis caching
-- Optimize Nginx configuration
+- Optimize PHP settings
 - Increase container resources
 
 ### 2. High Memory Usage
 
 **Solutions:**
-- Reduce PHP-FPM worker processes
+- Reduce PHP worker processes
 - Optimize MariaDB settings
 - Enable Redis for object caching
 
@@ -231,7 +222,7 @@ docker exec -it CONTAINER_NAME-nginx-1 tail -f /var/log/nginx/access.log
 
 **Solution:**
 - Use Nginx Proxy Manager for SSL termination
-- Configure SSL in Nginx configuration
+- Configure SSL in reverse proxy
 - Verify certificate paths and permissions
 
 ### 2. Mixed Content Warnings
@@ -257,17 +248,17 @@ docker exec -i CONTAINER_NAME mysql -u root -p wordpress < backup.sql
 # Backup WordPress files
 docker cp CONTAINER_NAME:/var/www/html ./wordpress-backup
 
-# Backup Nginx configuration
-cp nginx/default.conf ./nginx-backup.conf
+# Backup volumes
+docker run --rm -v wordpress-multisite-docker_wordpress_data:/data -v $(pwd):/backup alpine tar czf /backup/wordpress-backup.tar.gz -C /data .
 ```
 
 ## Getting Help
 
 1. **Check logs first** - Most issues are visible in container logs
-2. **Verify configuration** - Ensure all files are properly configured
+2. **Verify configuration** - Ensure `.env` file is properly configured
 3. **Test step by step** - Start with basic deployment, then add features
 4. **Use debugging commands** - The commands above help identify issues
-5. **Check documentation** - Review README.md and other guides
+5. **Check documentation** - Review README.md for setup instructions
 
 ## Emergency Recovery
 
@@ -284,6 +275,24 @@ docker volume prune
 docker-compose up -d
 ```
 
+## WP-CLI Management
+
+### Common WP-CLI Commands
+```bash
+# List all sites
+docker exec -it CONTAINER_NAME wp site list --allow-root
+
+# Create new site
+docker exec -it CONTAINER_NAME wp site create --slug=newsite --title="New Site" --allow-root
+
+# Update WordPress
+docker exec -it CONTAINER_NAME wp core update --allow-root
+docker exec -it CONTAINER_NAME wp core update-db --allow-root
+
+# Check multisite status
+docker exec -it CONTAINER_NAME wp core is-installed --network --allow-root
+```
+
 ---
 
-**Most issues can be resolved by checking logs and verifying configuration files.** 🔍 
+**Most issues can be resolved by checking logs and verifying the `.env` configuration.** 🔍 
