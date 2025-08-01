@@ -92,5 +92,4 @@ portainer-nginx-config.conf
 PORTAINER-DEPLOYMENT.md
 
 # Scripts (keep in repository)
-# scripts/ directory should be included
-# init-wordpress.sh should be included 
+# scripts/ directory should be included 
