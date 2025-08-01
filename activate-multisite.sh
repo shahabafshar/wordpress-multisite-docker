@@ -1,11 +1,12 @@
 #!/bin/bash
 
 # WordPress Multisite Activation Script
-# Run this after WordPress is installed and accessible
+# Alternative to manual activation - use this if you prefer automation
 
 set -e
 
-echo "🚀 Converting WordPress to Multisite..."
+echo "🚀 Converting WordPress to Multisite (Automated Method)..."
+echo "⚠️  Note: Manual activation via WordPress Admin is recommended for better control"
 
 # Load environment variables
 if [ -f .env ]; then
@@ -76,4 +77,9 @@ echo ""
 echo "🎉 You can now:"
 echo "   • Access Network Admin: /wp-admin/network/"
 echo "   • Create new sites in your network"
-echo "   • Configure network-wide plugins and themes" 
+echo "   • Configure network-wide plugins and themes"
+echo ""
+echo "💡 Tip: For future reference, you can also activate multisite manually:"
+echo "   1. Go to Tools → Network Setup in WordPress Admin"
+echo "   2. Follow the setup wizard"
+echo "   3. Edit wp-config.php to uncomment the multisite constants" 

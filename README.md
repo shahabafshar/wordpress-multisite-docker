@@ -4,7 +4,7 @@ A production-ready WordPress Docker stack that installs as single-site and easil
 
 ## ✨ Features
 
-- ✅ **Automatic WordPress Installation** - Installs WordPress automatically using environment variables
+- ✅ **WordPress with Multisite** - Installs single-site, converts to multisite with one script
 - ✅ **MariaDB 11.5** - Optimized database
 - ✅ **Redis** - Object caching for performance
 - ✅ **Apache (Built-in)** - WordPress's native web server
@@ -34,20 +34,44 @@ cp env.example .env
 docker-compose up -d
 ```
 
-### 2. That's it! 🎉
-
-**Your WordPress is automatically installed and ready:**
-- **Main site:** `http://localhost:8080` (or your domain)
-- **Admin login:** Use credentials from your `.env` file
-- **No manual installation required!**
+### 2. Complete WordPress Installation
+1. **Visit your site:** `http://localhost:8080` (or your domain)
+2. **Complete WordPress setup** using standard installation wizard
+3. **Use admin credentials** from your `.env` file
 
 ### 3. Convert to Multisite (Optional)
+
+**Option A: Manual Activation (Recommended)**
+1. **Login to WordPress Admin**
+2. **Go to:** Tools → Network Setup
+3. **Choose:** Subdirectory or Subdomain installation
+4. **Click:** Install Network
+5. **Edit wp-config.php** to uncomment multisite constants
+6. **Update .htaccess** with multisite rules
+
+**Option B: Script Activation**
 ```bash
-# When you're ready to enable multisite
+# After WordPress is installed and working
 ./activate-multisite.sh
 ```
 
-🎉 **Your WordPress site is ready!** Access admin at `/wp-admin/`
+🎉 **Your multisite network is ready!** Access Network Admin at `/wp-admin/network/`
+
+### 📝 Manual wp-config.php Editing
+
+After running Network Setup, you'll need to edit `wp-config.php` to uncomment the multisite constants:
+
+```php
+# Find these lines in wp-config.php and uncomment them:
+define('MULTISITE', true);
+define('SUBDOMAIN_INSTALL', false);
+define('DOMAIN_CURRENT_SITE', 'yourdomain.com');
+define('PATH_CURRENT_SITE', '/');
+define('SITE_ID_CURRENT_SITE', 1);
+define('BLOG_ID_CURRENT_SITE', 1);
+```
+
+**Note:** The multisite constants are already prepared in your `WORDPRESS_CONFIG_EXTRA` - just uncomment the lines you need!
 
 ## 🔧 Configuration
 
