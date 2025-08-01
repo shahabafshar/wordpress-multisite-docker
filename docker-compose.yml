@@ -111,9 +111,6 @@ services:
           wp rewrite structure '/%postname%/' --allow-root &&
           wp rewrite flush --allow-root &&
           echo '✅ WordPress installed and configured successfully!' &&
-          echo '🔧 Fixing permissions...' &&
-          chown -R www-data:www-data /var/www/html/wp-content &&
-          chmod -R 755 /var/www/html/wp-content &&
           echo '🚀 Enabling multisite...' &&
           wp core multisite-install --title=\"$${WORDPRESS_TITLE}\" --admin_email=\"$${WORDPRESS_ADMIN_EMAIL}\" --allow-root &&
           echo '📄 Creating .htaccess for multisite...' &&

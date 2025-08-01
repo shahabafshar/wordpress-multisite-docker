@@ -55,6 +55,8 @@ docker-compose up -d
 
 **No additional steps needed!** Your multisite network is ready to use.
 
+**Note:** You may see warnings about upload directory permissions during installation. This is normal and doesn't affect functionality - WordPress will create upload directories as needed.
+
 ### 📝 Multisite Configuration
 
 The multisite constants are automatically configured in `wp-config.php`:
