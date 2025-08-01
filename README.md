@@ -4,7 +4,7 @@ A production-ready WordPress Docker stack that installs as single-site and easil
 
 ## ✨ Features
 
-- ✅ **WordPress with Multisite** - Installs single-site, converts to multisite with one script
+- ✅ **Automatic WordPress Installation** - Installs WordPress automatically using environment variables
 - ✅ **MariaDB 11.5** - Optimized database
 - ✅ **Redis** - Object caching for performance
 - ✅ **Apache (Built-in)** - WordPress's native web server
@@ -34,18 +34,20 @@ cp env.example .env
 docker-compose up -d
 ```
 
-### 2. Complete WordPress Installation
-1. **Visit your site:** `http://localhost:8080` (or your domain)
-2. **Complete WordPress setup** using standard installation wizard
-3. **Use admin credentials** from your `.env` file
+### 2. That's it! 🎉
+
+**Your WordPress is automatically installed and ready:**
+- **Main site:** `http://localhost:8080` (or your domain)
+- **Admin login:** Use credentials from your `.env` file
+- **No manual installation required!**
 
 ### 3. Convert to Multisite (Optional)
 ```bash
-# After WordPress is installed and working
+# When you're ready to enable multisite
 ./activate-multisite.sh
 ```
 
-🎉 **Your multisite network is ready!** Access Network Admin at `/wp-admin/network/`
+🎉 **Your WordPress site is ready!** Access admin at `/wp-admin/`
 
 ## 🔧 Configuration
 

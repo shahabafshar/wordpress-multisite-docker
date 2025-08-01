@@ -13,6 +13,9 @@ mu-plugins/
 wp-config.php
 .htaccess
 
+# Custom WordPress build (keep in repository)
+# wordpress/ directory should be included
+
 # Database files
 *.sql
 *.sql.gz
