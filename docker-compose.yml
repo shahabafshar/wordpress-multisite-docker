@@ -70,6 +70,7 @@ services:
   wp-cli-init:
     image: wordpress:cli
     restart: "no"
+    user: "33:33"
     depends_on:
       - db
       - wordpress
@@ -84,6 +85,7 @@ services:
       WORDPRESS_ADMIN_EMAIL: ${WORDPRESS_ADMIN_EMAIL:-admin@example.com}
       DOMAIN_CURRENT_SITE: ${DOMAIN_CURRENT_SITE:-localhost:8080}
       SUBDOMAIN_INSTALL: ${SUBDOMAIN_INSTALL:-false}
+      HOME: /tmp
     volumes:
       - wordpress_data:/var/www/html
       - ./wp-content:/var/www/html/wp-content
