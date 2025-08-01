@@ -33,6 +33,27 @@ docker exec -it CONTAINER_NAME wp config get MULTISITE --allow-root
 docker exec -it CONTAINER_NAME wp config get DOMAIN_CURRENT_SITE --allow-root
 ```
 
+#### Check .htaccess File
+Ensure the .htaccess file exists and has proper multisite rules:
+```bash
+# Check if .htaccess exists
+docker exec -it CONTAINER_NAME ls -la /var/www/html/.htaccess
+
+# View .htaccess content
+docker exec -it CONTAINER_NAME cat /var/www/html/.htaccess
+```
+
+#### Check Database Tables
+Verify multisite database tables are properly set up:
+```bash
+# Check if multisite tables exist
+docker exec -it CONTAINER_NAME wp db query "SHOW TABLES LIKE 'wp_blogs'" --allow-root
+docker exec -it CONTAINER_NAME wp db query "SHOW TABLES LIKE 'wp_site'" --allow-root
+
+# Check if main site is properly registered
+docker exec -it CONTAINER_NAME wp db query "SELECT * FROM wp_blogs WHERE blog_id = 1" --allow-root
+```
+
 ### 2. Database Connection Issues
 
 **Error:**
