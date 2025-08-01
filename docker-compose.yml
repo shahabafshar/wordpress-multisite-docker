@@ -46,13 +46,13 @@ services:
         # Multisite settings (ready for manual activation)
         define('WP_ALLOW_MULTISITE', true);
         
-        # Multisite constants (will be set by WP-CLI)
-        define('MULTISITE', true);
-        define('SUBDOMAIN_INSTALL', ${SUBDOMAIN_INSTALL:-false});
-        define('DOMAIN_CURRENT_SITE', '${DOMAIN_CURRENT_SITE}');
-        define('PATH_CURRENT_SITE', '/');
-        define('SITE_ID_CURRENT_SITE', 1);
-        define('BLOG_ID_CURRENT_SITE', 1);
+        # Multisite constants (will be set by WP-CLI after installation)
+        # define('MULTISITE', true);
+        # define('SUBDOMAIN_INSTALL', false);
+        # define('DOMAIN_CURRENT_SITE', 'yourdomain.com');
+        # define('PATH_CURRENT_SITE', '/');
+        # define('SITE_ID_CURRENT_SITE', 1);
+        # define('BLOG_ID_CURRENT_SITE', 1);
         
         if (!defined('WP_DEBUG')) define('WP_DEBUG', false);
         if (!defined('WP_DEBUG_LOG')) define('WP_DEBUG_LOG', false);
@@ -113,22 +113,16 @@ services:
           echo '✅ WordPress installed and configured successfully!' &&
           echo '🚀 Enabling multisite...' &&
           wp core multisite-install --title=\"$${WORDPRESS_TITLE}\" --admin_email=\"$${WORDPRESS_ADMIN_EMAIL}\" --allow-root &&
+          echo '🔧 Adding multisite constants to wp-config.php...' &&
+          wp config set MULTISITE true --raw --allow-root &&
+          wp config set SUBDOMAIN_INSTALL \"$${SUBDOMAIN_INSTALL:-false}\" --raw --allow-root &&
+          wp config set DOMAIN_CURRENT_SITE \"$${DOMAIN_CURRENT_SITE}\" --allow-root &&
+          wp config set PATH_CURRENT_SITE \"/\" --allow-root &&
+          wp config set SITE_ID_CURRENT_SITE 1 --raw --allow-root &&
+          wp config set BLOG_ID_CURRENT_SITE 1 --raw --allow-root &&
           echo '📄 Creating .htaccess for multisite...' &&
           if [ \"$${SUBDOMAIN_INSTALL:-false}\" = \"false\" ]; then
-            echo 'RewriteEngine On' > /var/www/html/.htaccess &&
-            echo 'RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]' >> /var/www/html/.htaccess &&
-            echo 'RewriteBase /' >> /var/www/html/.htaccess &&
-            echo 'RewriteRule ^index\.php$ - [L]' >> /var/www/html/.htaccess &&
-            echo '' >> /var/www/html/.htaccess &&
-            echo '# add a trailing slash to /wp-admin' >> /var/www/html/.htaccess &&
-            echo 'RewriteRule ^([_0-9a-zA-Z-]+/)?wp-admin$ $1wp-admin/ [R=301,L]' >> /var/www/html/.htaccess &&
-            echo '' >> /var/www/html/.htaccess &&
-            echo 'RewriteCond %{REQUEST_FILENAME} -f [OR]' >> /var/www/html/.htaccess &&
-            echo 'RewriteCond %{REQUEST_FILENAME} -d' >> /var/www/html/.htaccess &&
-            echo 'RewriteRule ^ - [L]' >> /var/www/html/.htaccess &&
-            echo 'RewriteRule ^([_0-9a-zA-Z-]+/)?(wp-(content|admin|includes).*) $2 [L]' >> /var/www/html/.htaccess &&
-            echo 'RewriteRule ^([_0-9a-zA-Z-]+/)?(.*\.php)$ $2 [L]' >> /var/www/html/.htaccess &&
-            echo 'RewriteRule . index.php [L]' >> /var/www/html/.htaccess;
+            wp rewrite flush --hard --allow-root;
           fi &&
           echo '✅ WordPress Multisite enabled successfully!';
         fi
