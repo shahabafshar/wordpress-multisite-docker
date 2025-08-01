@@ -43,10 +43,8 @@ services:
         define('WP_REDIS_PASSWORD', '');
         define('WP_CACHE', true);
         
-        # Multisite settings (ready for manual activation)
-        define('WP_ALLOW_MULTISITE', true);
-        
-        # Multisite constants (will be set by WP-CLI after installation)
+        # Multisite settings (will be set by WP-CLI after installation)
+        # define('WP_ALLOW_MULTISITE', true);
         # define('MULTISITE', true);
         # define('SUBDOMAIN_INSTALL', false);
         # define('DOMAIN_CURRENT_SITE', 'yourdomain.com');
@@ -103,10 +101,10 @@ services:
           echo '✅ WordPress is already installed!';
         else
           echo '📝 Installing WordPress...' &&
-          wp core install --url=\"$${DOMAIN_CURRENT_SITE}\" --title=\"$${WORDPRESS_TITLE}\" --admin_user=\"$${WORDPRESS_ADMIN_USER}\" --admin_password=\"$${WORDPRESS_ADMIN_PASSWORD}\" --admin_email=\"$${WORDPRESS_ADMIN_EMAIL}\" --skip-email --allow-root &&
+          wp core install --url=\"https://$${DOMAIN_CURRENT_SITE}\" --title=\"$${WORDPRESS_TITLE}\" --admin_user=\"$${WORDPRESS_ADMIN_USER}\" --admin_password=\"$${WORDPRESS_ADMIN_PASSWORD}\" --admin_email=\"$${WORDPRESS_ADMIN_EMAIL}\" --skip-email --allow-root &&
           echo '🔧 Configuring WordPress...' &&
-          wp option update home \"http://$${DOMAIN_CURRENT_SITE}\" --allow-root &&
-          wp option update siteurl \"http://$${DOMAIN_CURRENT_SITE}\" --allow-root &&
+          wp option update home \"https://$${DOMAIN_CURRENT_SITE}\" --allow-root &&
+          wp option update siteurl \"https://$${DOMAIN_CURRENT_SITE}\" --allow-root &&
           wp option update timezone_string UTC --allow-root &&
           wp option update date_format 'F j, Y' --allow-root &&
           wp option update time_format 'g:i a' --allow-root &&
@@ -116,6 +114,7 @@ services:
           echo '🚀 Enabling multisite...' &&
           wp core multisite-install --title=\"$${WORDPRESS_TITLE}\" --admin_email=\"$${WORDPRESS_ADMIN_EMAIL}\" --allow-root &&
           echo '🔧 Adding multisite constants to wp-config.php...' &&
+          wp config set WP_ALLOW_MULTISITE true --raw --allow-root &&
           wp config set MULTISITE true --raw --allow-root &&
           wp config set SUBDOMAIN_INSTALL \"$${SUBDOMAIN_INSTALL:-false}\" --raw --allow-root &&
           wp config set DOMAIN_CURRENT_SITE \"$${DOMAIN_CURRENT_SITE}\" --allow-root &&
@@ -123,9 +122,7 @@ services:
           wp config set SITE_ID_CURRENT_SITE 1 --raw --allow-root &&
           wp config set BLOG_ID_CURRENT_SITE 1 --raw --allow-root &&
           echo '📄 Creating .htaccess for multisite...' &&
-          if [ \"$${SUBDOMAIN_INSTALL:-false}\" = \"false\" ]; then
-            wp rewrite flush --hard --allow-root;
-          fi &&
+          wp rewrite flush --hard --allow-root &&
           echo '✅ WordPress Multisite enabled successfully!';
         fi
       "
