@@ -18,23 +18,30 @@ A production-ready WordPress Docker stack with **automatic WordPress Multisite i
 
 ## 🚀 Quick Start
 
-### 1. Deploy the Stack
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/wordpress-multisite-docker.git
+   cd wordpress-multisite-docker
+   ```
 
-**Option A: Portainer (Recommended)**
-1. **In Portainer:** Stacks → Add Stack → Repository  
-2. **Repository URL:** `https://github.com/yourusername/wordpress-multisite-docker`
-3. **Compose file:** `docker-compose.yml`
-4. **Environment file:** Upload `.env` (copy from `env.example`)
-5. **Click Deploy**
+2. **Configure environment**
+   ```bash
+   cp env.example .env
+   # Edit .env with your domain and settings
+   ```
 
-**Option B: Local Docker**
-```bash
-git clone https://github.com/yourusername/wordpress-multisite-docker
-cd wordpress-multisite-docker
-cp env.example .env
-# Edit .env with your settings
-docker-compose up -d
-```
+3. **Deploy with Portainer**
+   - Go to Portainer → Stacks → Add Stack
+   - Choose "Repository" method
+   - Enter your Git repository URL
+   - Click "Deploy the stack"
+
+4. **Access your site**
+   - **Frontend**: `http://your-server:8080`
+   - **Admin**: `http://your-server:8080/wp-admin`
+   - **Network Admin**: `http://your-server:8080/wp-admin/network`
+
+**✅ That's it!** WordPress Multisite will be automatically installed with all essential plugins and themes.
 
 ### 2. Configure Environment
 
@@ -164,20 +171,31 @@ The stack includes multiple security layers:
 
 ## 🏗️ Architecture
 
+The stack uses a **script-based initialization approach** for maximum reliability:
+
 ```
-┌─────────────────┐    ┌─────────────────┐
-│   WordPress     │    │   MariaDB       │
-│   - Apache      │◄──►│   - Database    │
-│   - PHP Latest  │    │   - Internal    │
-│   - Multisite   │    │   - Optimized   │
-│   - Port 8080   │    │                 │
-└─────────────────┘    └─────────────────┘
-         │
-         ▼
-┌─────────────────┐    ┌─────────────────┐
-│   Redis         │    │   WP-CLI Init   │
-│   - Caching     │    │   - Auto Setup  │
-│   - Sessions    │    │   - Internal    │
-│   - Internal    │    │   - Internal    │
-└─────────────────┘    └─────────────────┘
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   MariaDB       │    │   WordPress     │    │   Redis         │
+│   - Database    │    │   - CMS         │    │   - Caching     │
+│   - Internal    │    │   - Apache      │    │   - Sessions    │
+│   - Internal    │    │   - Port 8080   │    │   - Internal    │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         └───────────────────────┼───────────────────────┘
+                                 │
+                    ┌─────────────────┐
+                    │   WP-CLI Init   │
+                    │   - Auto Setup  │
+                    │   - Script File │
+                    │   - Internal    │
+                    └─────────────────┘
 ```
+
+### 🔧 Script-Based Initialization
+
+**Why Script Files?**
+- **✅ Reliable Parsing**: No Docker Compose YAML parsing issues
+- **✅ Easy Maintenance**: Simple bash script, easy to edit and debug
+- **✅ Version Control**: Script can be tracked separately from compose file
+- **✅ Portainer Compatible**: Works reliably in all deployment scenarios
+- **✅ Error Handling**: Comprehensive error handling and logging
