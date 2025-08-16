@@ -139,6 +139,7 @@ The installation process automatically creates and secures upload directories:
 - **Secure Permissions**: 755 (rwxr-xr-x) - owner can read/write/execute, others can read/execute
 - **Proper Ownership**: `www-data:www-data` (web server user)
 - **Security .htaccess**: Prevents directory browsing and file execution
+- **Automatic Creation**: WordPress can create new directories as needed via mu-plugin
 
 ### 🔒 Security Features
 The stack includes multiple security layers:
@@ -149,14 +150,44 @@ The stack includes multiple security layers:
 - **Network Isolation**: Services only communicate internally
 - **WordPress Security**: Includes Wordfence plugin for additional protection
 
+### 🔧 Automatic Directory Management
+The stack uses a **mu-plugin** (Must-Use Plugin) for intelligent directory creation:
+- **Dynamic Creation**: WordPress creates upload directories automatically when needed
+- **Secure Permissions**: All new directories get 755 permissions (secure but functional)
+- **Multisite Support**: Automatically handles subsite upload directory creation
+- **WordPress Integration**: Uses WordPress's built-in `wp_mkdir_p()` function (secure)
+- **Performance**: Only creates directories when actually needed
+- **Maintenance**: No manual directory setup required
+
+### 📁 Upload Limits Configuration
+The stack is configured to handle large image files by default:
+- **Default Upload Size**: 64MB (configurable via environment variables)
+- **Memory Limit**: 256MB for image processing
+- **Execution Time**: 300 seconds for large file processing
+- **Input Variables**: 3000 for complex forms
+
+**To customize upload limits**, add these to your `.env` file:
+```bash
+UPLOAD_MAX_FILESIZE=128M      # Increase to 128MB
+POST_MAX_SIZE=128M            # Increase to 128MB  
+MEMORY_LIMIT=512M             # Increase to 512MB
+MAX_EXECUTION_TIME=600        # Increase to 10 minutes
+```
+
 ## 🔍 Troubleshooting
 
 ### Common Issues
 
 **Upload Directory Issues**
-- **"Unable to create directory" errors**: The security setup automatically creates required directories
-- **Permission denied**: Proper ownership and permissions are set automatically
-- **Multisite uploads fail**: Base multisite structure is created during installation
+- **"Unable to create directory" errors**: The mu-plugin automatically creates directories when needed
+- **Permission denied**: Proper ownership (www-data) allows WordPress to create directories securely
+- **Multisite uploads fail**: Automatic directory creation handles all subsite upload paths
+- **Dynamic directories**: WordPress creates year/month directories automatically via the mu-plugin
+
+**Upload Size Issues**
+- **"File exceeds maximum upload size"**: Default limit is 64MB, configurable via environment variables
+- **Large image uploads fail**: Memory and execution time limits are increased automatically
+- **High-resolution images not uploading**: Check UPLOAD_MAX_FILESIZE in your .env file
 
 **Security Benefits**
 - **File Upload Attacks**: Blocked by .htaccess rules preventing PHP execution
