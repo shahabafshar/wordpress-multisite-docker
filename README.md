@@ -125,6 +125,43 @@ The installation process includes comprehensive error handling:
 
 Check the `wp-cli-init` container logs to see any warnings or failed installations.
 
+### 🔧 Upload Directory Setup
+The installation process automatically creates and secures upload directories:
+- **Main Site**: `/wp-content/uploads/2025/08/`
+- **Multisite Structure**: `/wp-content/uploads/sites/` (for future subsites)
+- **Secure Permissions**: 755 (rwxr-xr-x) - owner can read/write/execute, others can read/execute
+- **Proper Ownership**: `www-data:www-data` (web server user)
+- **Security .htaccess**: Prevents directory browsing and file execution
+
+### 🔒 Security Features
+The stack includes multiple security layers:
+- **File Upload Security**: Only allows specific file types (images, documents)
+- **PHP Execution Prevention**: Blocks execution of uploaded PHP files
+- **Directory Browsing**: Disabled to prevent information disclosure
+- **Proper Permissions**: Minimal required permissions for web server operation
+- **Network Isolation**: Services only communicate internally
+- **WordPress Security**: Includes Wordfence plugin for additional protection
+
+## 🔍 Troubleshooting
+
+### Common Issues
+
+**Upload Directory Issues**
+- **"Unable to create directory" errors**: The security setup automatically creates required directories
+- **Permission denied**: Proper ownership and permissions are set automatically
+- **Multisite uploads fail**: Base multisite structure is created during installation
+
+**Security Benefits**
+- **File Upload Attacks**: Blocked by .htaccess rules preventing PHP execution
+- **Directory Traversal**: Prevented by proper permissions and .htaccess
+- **Information Disclosure**: Directory browsing is disabled
+- **Malicious File Uploads**: Only safe file types are allowed
+
+**Database Connection Issues**
+- Check `.env` file has correct database credentials
+- Ensure MariaDB container is running
+- Verify network connectivity between containers
+
 ## 🏗️ Architecture
 
 ```
@@ -140,101 +177,7 @@ Check the `wp-cli-init` container logs to see any warnings or failed installatio
 ┌─────────────────┐    ┌─────────────────┐
 │   Redis         │    │   WP-CLI Init   │
 │   - Caching     │    │   - Auto Setup  │
-│   - Sessions    │    │   - One-time    │
+│   - Sessions    │    │   - Internal    │
 │   - Internal    │    │   - Internal    │
 └─────────────────┘    └─────────────────┘
 ```
-
-## 🔧 Configuration
-
-### Port Configuration
-- **WordPress:** `8080:80` (change in `.env` if needed)
-- **Database:** Internal only (no external access)
-- **Redis:** Internal only (no external access)
-
-### Automatic Setup Process
-
-The stack automatically:
-1. ✅ **Creates database** with proper credentials
-2. ✅ **Installs WordPress** with multisite support
-3. ✅ **Enables multisite** via WP-CLI
-4. ✅ **Configures all constants** in wp-config.php
-5. ✅ **Sets up .htaccess** with proper rewrite rules
-6. ✅ **Installs essential plugins** (Wordfence, Yoast SEO, Google Site Kit, UpdraftPlus, NS Cloner, WP Super Cache, WooCommerce, etc.)
-7. ✅ **Installs essential themes** (Hello Elementor, Twenty Twenty-Four, etc.)
-8. ✅ **Configures Redis** for caching
-9. ✅ **Error handling** - Continues installation even if individual plugins/themes fail
-
-## 🛠️ Management Commands
-
-### WP-CLI Commands
-```bash
-# Access WP-CLI in the container
-docker exec -it CONTAINER_NAME wp --help
-
-# List all sites
-docker exec -it CONTAINER_NAME wp site list --allow-root
-
-# Create new site
-docker exec -it CONTAINER_NAME wp site create --slug=newsite --title="New Site" --allow-root
-
-# Update WordPress
-docker exec -it CONTAINER_NAME wp core update --allow-root
-docker exec -it CONTAINER_NAME wp core update-db --allow-root
-```
-
-### Backup Database
-```bash
-docker exec -it CONTAINER_NAME mysqldump -u root -p wordpress > backup.sql
-```
-
-## 🔍 Troubleshooting
-
-### Common Issues
-
-**Database Connection Issues**
-- Check `.env` file has correct database credentials
-- Ensure MariaDB container is running
-- Verify network connectivity between containers
-
-**Multisite Setup Issues**
-- Ensure `DOMAIN_CURRENT_SITE` in `.env` matches your actual domain
-- Check that HTTPS is properly configured if using SSL
-- Verify `.htaccess` file exists and has correct permissions
-
-**Performance Issues**
-- Check Redis container is running
-- Monitor container resource usage
-- Verify caching is working properly
-
-## 📁 File Structure
-
-```
-wordpress-multisite-docker/
-├── docker-compose.yml              # Main stack configuration
-├── env.example                     # Environment template
-├── README.md                       # This file
-├── .gitignore                      # Git ignore rules
-└── LICENSE                         # License file
-```
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🆘 Support
-
-- **Issues:** [GitHub Issues](https://github.com/yourusername/wordpress-multisite-docker/issues)
-- **Discussions:** [GitHub Discussions](https://github.com/yourusername/wordpress-multisite-docker/discussions)
-
----
-
-**Ready to deploy?** Just click deploy in Portainer and you'll have a production-ready WordPress multisite running in minutes! 🚀 

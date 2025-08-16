@@ -95,8 +95,29 @@ services:
         echo '⏳ Waiting for database and WordPress to be ready...' &&
         sleep 15 &&
         echo '🔧 Setting up upload directory permissions...' &&
-        mkdir -p /var/www/html/wp-content/uploads/2025/08 || echo '⚠️  Upload directory creation failed, continuing...' &&
+        # Create main site upload directories with secure permissions
+        mkdir -p /var/www/html/wp-content/uploads/2025/08 || echo '⚠️  Main upload directory creation failed, continuing...' &&
+        # Create multisite upload base directory for future subsites
+        mkdir -p /var/www/html/wp-content/uploads/sites || echo '⚠️  Multisite upload directory creation failed, continuing...' &&
+        # Set secure permissions: 755 for directories (rwxr-xr-x)
+        # - Owner (www-data): read, write, execute
+        # - Group: read, execute
+        # - Others: read, execute
         chmod -R 755 /var/www/html/wp-content/uploads || echo '⚠️  Upload directory permissions failed, continuing...' &&
+        # Set proper ownership to www-data (web server user)
+        chown -R www-data:www-data /var/www/html/wp-content/uploads || echo '⚠️  Upload directory ownership failed, continuing...' &&
+        # Create .htaccess to prevent direct access to uploads (security)
+        echo 'Options -Indexes' > /var/www/html/wp-content/uploads/.htaccess || echo '⚠️  Upload .htaccess creation failed, continuing...' &&
+        echo 'Order deny,allow' >> /var/www/html/wp-content/uploads/.htaccess || echo '⚠️  Upload .htaccess rule 1 failed, continuing...' &&
+        echo 'Deny from all' >> /var/www/html/wp-content/uploads/.htaccess || echo '⚠️  Upload .htaccess rule 2 failed, continuing...' &&
+        # Allow only image and document files (prevent PHP execution)
+        echo '<FilesMatch "\.(jpg|jpeg|png|gif|webp|pdf|doc|docx|xls|xlsx|ppt|pptx|txt|zip|rar)$">' >> /var/www/html/wp-content/uploads/.htaccess || echo '⚠️  Upload .htaccess rule 3 failed, continuing...' &&
+        echo '    Allow from all' >> /var/www/html/wp-content/uploads/.htaccess || echo '⚠️  Upload .htaccess rule 4 failed, continuing...' &&
+        echo '</FilesMatch>' >> /var/www/html/wp-content/uploads/.htaccess || echo '⚠️  Upload .htaccess rule 5 failed, continuing...' &&
+        # Prevent execution of any uploaded files (security)
+        echo '<FilesMatch "\.(php|php3|php4|php5|phtml|pl|py|jsp|asp|sh|cgi)$">' >> /var/www/html/wp-content/uploads/.htaccess || echo '⚠️  Upload .htaccess rule 6 failed, continuing...' &&
+        echo '    Deny from all' >> /var/www/html/wp-content/uploads/.htaccess || echo '⚠️  Upload .htaccess rule 7 failed, continuing...' &&
+        echo '</FilesMatch>' >> /var/www/html/wp-content/uploads/.htaccess || echo '⚠️  Upload .htaccess rule 8 failed, continuing...' &&
         echo '🔍 Checking if WordPress is already installed...' &&
         if wp core is-installed --allow-root 2>/dev/null; then
           echo '✅ WordPress is already installed!';
