@@ -158,6 +158,7 @@ The stack uses a **mu-plugin** (Must-Use Plugin) for intelligent directory creat
 - **WordPress Integration**: Uses WordPress's built-in `wp_mkdir_p()` function (secure)
 - **Performance**: Only creates directories when actually needed
 - **Maintenance**: No manual directory setup required
+- **Deployment Reliability**: Inline script approach ensures consistent deployment
 
 ### 📁 Upload Limits Configuration
 The stack is configured to handle large image files by default:
