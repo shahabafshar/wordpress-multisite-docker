@@ -41,7 +41,6 @@ services:
         define('WP_REDIS_PORT', 6379);
         define('WP_REDIS_DATABASE', 0);
         define('WP_REDIS_PASSWORD', '');
-        define('WP_CACHE', true);
         
         # Increase upload limits for high-resolution images
         define('WP_MEMORY_LIMIT', '${MEMORY_LIMIT:-256M}');
@@ -69,7 +68,7 @@ services:
   # ── WP-CLI INIT ──
   wp-cli-init:
     image: wordpress:cli
-    restart: "no"
+    restart: "on-failure"
     user: "33:33"
     depends_on:
       - db
@@ -103,6 +102,7 @@ services:
       - ./mu-plugins:/var/www/html/wp-content/mu-plugins
     command: >
       bash -c "
+        echo '🚀 WP-CLI Init container starting...' &&
         echo '⏳ Waiting for database and WordPress to be ready...' &&
         sleep 15 &&
         echo '🔧 Setting up upload directory permissions...' &&
@@ -186,7 +186,23 @@ services:
         echo '✅ Auto-create upload directories mu-plugin created' &&
         echo '🔍 Checking if WordPress is already installed...' &&
         if wp core is-installed --allow-root 2>/dev/null; then
-          echo '✅ WordPress is already installed!';
+          echo '✅ WordPress is already installed! Running maintenance tasks...' &&
+          echo '🔧 Configuring upload limits...' &&
+          wp option update upload_size_limit \"\${UPLOAD_MAX_FILESIZE:-67108864}\" --allow-root || echo '⚠️  Upload size limit update failed, continuing...' &&
+          wp option update post_max_size \"\${POST_MAX_SIZE:-67108864}\" --allow-root || echo '⚠️  Post max size update failed, continuing...' &&
+          wp option update memory_limit \"\${MEMORY_LIMIT:-268435456}\" --allow-root || echo '⚠️  Memory limit update failed, continuing...' &&
+          echo '🔧 Verifying multisite setup...' &&
+          if wp core is-installed --network --allow-root 2>/dev/null; then
+            echo '✅ Multisite is properly configured!' &&
+            echo '🔧 Updating site options...' &&
+            wp site option update 1 blogname \"\${WORDPRESS_TITLE}\" --allow-root || echo '⚠️  Site blog name update failed, continuing...' &&
+            wp site option update 1 blogdescription 'Professional-WordPress-Multisite-Network' --allow-root || echo '⚠️  Site blog description update failed, continuing...';
+          else
+            echo '⚠️  Multisite not detected, skipping multisite-specific tasks...';
+          fi &&
+          echo '✅ Maintenance tasks completed!' &&
+          echo '🎯 Container will exit successfully after maintenance tasks.' &&
+          echo '🔄 To run maintenance again, restart the container manually or redeploy the stack.';
         else
           echo '📝 Installing WordPress...' &&
           wp core install --url=\"https://\${DOMAIN_CURRENT_SITE}\" --title=\"\${WORDPRESS_TITLE}\" --admin_user=\"\${WORDPRESS_ADMIN_USER}\" --admin_password=\"\${WORDPRESS_ADMIN_PASSWORD}\" --admin_email=\"\${WORDPRESS_ADMIN_EMAIL}\" --skip-email --allow-root &&
@@ -272,8 +288,12 @@ services:
           echo '   - Themes: ✅ Installed' &&
           echo '   - Plugins: ✅ Installed (with error handling)' &&
           echo '   - Configuration: ✅ Applied' &&
-          echo '🎉 Setup completed! Check logs for any warnings.';
-        fi
+          echo '🎉 Setup completed! Check logs for any warnings.' &&
+          echo '🎯 Container will exit successfully after installation.' &&
+          echo '🔄 To run maintenance tasks, restart the container manually or redeploy the stack.';
+        fi &&
+        echo '✅ WP-CLI Init container completed successfully!' &&
+        exit 0
       "
     networks:
       - wordpress_network
