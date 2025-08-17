@@ -100,8 +100,8 @@ services:
       - ./uploads:/var/www/html/wp-content/uploads
       - ./plugins:/var/www/html/wp-content/plugins
       - ./themes:/var/www/html/wp-content/themes
-      - ./init-wordpress.sh:/usr/local/bin/init-wordpress.sh
-    command: bash /usr/local/bin/init-wordpress.sh
+      - ./init-wordpress.sh:/tmp/init-wordpress.sh
+    command: bash /tmp/init-wordpress.sh
     networks:
       - wordpress_network
 
