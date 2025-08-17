@@ -20,4 +20,7 @@ wordpress_data/
 
 # Temporary files
 *.tmp
-*.temp 
+*.temp
+
+# Generated scripts
+init-wordpress.sh 
