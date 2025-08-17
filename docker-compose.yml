@@ -123,11 +123,48 @@ services:
         echo '<FilesMatch "\.(php|php3|php4|php5|phtml|pl|py|jsp|asp|sh|cgi)$">' >> /var/www/html/wp-content/uploads/.htaccess || echo '⚠️  Upload .htaccess rule 6 failed, continuing...'
         echo '    Deny from all' >> /var/www/html/wp-content/uploads/.htaccess || echo '⚠️  Upload .htaccess rule 7 failed, continuing...'
         echo '</FilesMatch>' >> /var/www/html/wp-content/uploads/.htaccess || echo '⚠️  Upload .htaccess rule 8 failed, continuing...'
+        echo '🔧 Ensuring upload directories exist with proper permissions...'
+        # Always ensure the base upload structure exists
+        mkdir -p /var/www/html/wp-content/uploads/sites || echo '⚠️  Multisite upload directory creation failed, continuing...'
+        chmod 755 /var/www/html/wp-content/uploads || echo '⚠️  Upload directory permissions failed, continuing...'
+        chown -R www-data:www-data /var/www/html/wp-content/uploads || echo '⚠️  Upload directory ownership failed, continuing...'
+        
         echo '🔍 Checking if WordPress is already installed...'
         if su -s /bin/sh www-data -c 'wp core is-installed' 2>/dev/null; then
           echo '✅ WordPress is already installed!'
-          echo '🔧 Ensuring proper permissions for existing installation...'
-          chown -R www-data:www-data /var/www/html/wp-content/uploads 2>/dev/null || echo '⚠️  Upload ownership update failed, continuing...'
+          echo '🔧 Checking if multisite is enabled...'
+          if su -s /bin/sh www-data -c 'wp core is-installed --network' 2>/dev/null; then
+            echo '✅ Multisite is already enabled!'
+          else
+            echo '🚀 Enabling multisite for existing WordPress...'
+            su -s /bin/sh www-data -c "wp core multisite-install --title='${WORDPRESS_TITLE}' --admin_email='${WORDPRESS_ADMIN_EMAIL}'"
+            echo '🔧 Adding multisite constants to wp-config.php...'
+            su -s /bin/sh www-data -c "wp config set WP_ALLOW_MULTISITE true --raw"
+            su -s /bin/sh www-data -c "wp config set MULTISITE true --raw"
+            su -s /bin/sh www-data -c "wp config set SUBDOMAIN_INSTALL '${SUBDOMAIN_INSTALL:-false}' --raw"
+            su -s /bin/sh www-data -c "wp config set DOMAIN_CURRENT_SITE '${DOMAIN_CURRENT_SITE}'"
+            su -s /bin/sh www-data -c "wp config set PATH_CURRENT_SITE '/'"
+            su -s /bin/sh www-data -c "wp config set SITE_ID_CURRENT_SITE 1 --raw"
+            su -s /bin/sh www-data -c "wp config set BLOG_ID_CURRENT_SITE 1 --raw"
+            echo '📄 Creating .htaccess for multisite...'
+            if [ "${SUBDOMAIN_INSTALL:-false}" = "false" ]; then
+              echo 'RewriteEngine On' > /var/www/html/.htaccess || echo '⚠️  .htaccess creation failed, continuing...'
+              echo 'RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]' >> /var/www/html/.htaccess || echo '⚠️  .htaccess rule 1 failed, continuing...'
+              echo 'RewriteBase /' >> /var/www/html/.htaccess || echo '⚠️  .htaccess rule 2 failed, continuing...'
+              echo 'RewriteRule ^index\.php$ - [L]' >> /var/www/html/.htaccess || echo '⚠️  .htaccess rule 3 failed, continuing...'
+              echo '' >> /var/www/html/.htaccess || echo '⚠️  .htaccess rule 4 failed, continuing...'
+              echo '# add a trailing slash to /wp-admin' >> /var/www/html/.htaccess || echo '⚠️  .htaccess rule 5 failed, continuing...'
+              echo 'RewriteRule ^([_0-9a-zA-Z-]+/)?wp-admin$ $1wp-admin/ [R=301,L]' >> /var/www/html/.htaccess || echo '⚠️  .htaccess rule 6 failed, continuing...'
+              echo '' >> /var/www/html/.htaccess || echo '⚠️  .htaccess rule 7 failed, continuing...'
+              echo 'RewriteCond %{REQUEST_FILENAME} -f [OR]' >> /var/www/html/.htaccess || echo '⚠️  .htaccess rule 8 failed, continuing...'
+              echo 'RewriteCond %{REQUEST_FILENAME} -d' >> /var/www/html/.htaccess || echo '⚠️  .htaccess rule 9 failed, continuing...'
+              echo 'RewriteRule ^ - [L]' >> /var/www/html/.htaccess || echo '⚠️  .htaccess rule 10 failed, continuing...'
+              echo 'RewriteRule ^([_0-9a-zA-Z-]+/)?(wp-(content|admin|includes).*) $2 [L]' >> /var/www/html/.htaccess || echo '⚠️  .htaccess rule 11 failed, continuing...'
+              echo 'RewriteRule ^([_0-9a-zA-Z-]+/)?(.*\.php)$ $2 [L]' >> /var/www/html/.htaccess || echo '⚠️  .htaccess rule 12 failed, continuing...'
+              echo 'RewriteRule . index.php [L]' >> /var/www/html/.htaccess || echo '⚠️  .htaccess rule 13 failed, continuing...'
+            fi
+            chown www-data:www-data /var/www/html/.htaccess 2>/dev/null || echo '⚠️  .htaccess ownership failed, continuing...'
+          fi
         else
           echo '📝 Installing WordPress...'
           su -s /bin/sh www-data -c "wp core install --url='https://${DOMAIN_CURRENT_SITE}' --title='${WORDPRESS_TITLE}' --admin_user='${WORDPRESS_ADMIN_USER}' --admin_password='${WORDPRESS_ADMIN_PASSWORD}' --admin_email='${WORDPRESS_ADMIN_EMAIL}' --skip-email"
