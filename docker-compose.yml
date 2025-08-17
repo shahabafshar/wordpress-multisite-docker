@@ -129,9 +129,27 @@ services:
         mkdir -p /var/www/html/wp-content/uploads/elementor || echo '⚠️  Elementor upload directory creation failed, continuing...'
         mkdir -p /var/www/html/wp-content/uploads/unlimited_elements || echo '⚠️  Unlimited Elements upload directory creation failed, continuing...'
         
-        # Set proper permissions and ownership
+        # Create common plugin working directories
+        mkdir -p /var/www/html/wp-content/cache || echo '⚠️  Cache directory creation failed, continuing...'
+        mkdir -p /var/www/html/wp-content/temp || echo '⚠️  Temp directory creation failed, continuing...'
+        mkdir -p /var/www/html/wp-content/ai1wm-backups || echo '⚠️  Backup directory creation failed, continuing...'
+        
+        # Create year/month upload structure for current and next year
+        current_year=$(date +%Y)
+        next_year=$((current_year + 1))
+        for year in $current_year $next_year; do
+          for month in $(seq -w 1 12); do
+            mkdir -p /var/www/html/wp-content/uploads/$year/$month || echo "⚠️  Upload directory $year/$month creation failed, continuing..."
+          done
+        done
+        
+        # Set proper permissions and ownership recursively
         chmod -R 755 /var/www/html/wp-content/uploads || echo '⚠️  Upload directory permissions failed, continuing...'
+        chmod -R 755 /var/www/html/wp-content/cache || echo '⚠️  Cache directory permissions failed, continuing...'
+        chmod -R 755 /var/www/html/wp-content/temp || echo '⚠️  Temp directory permissions failed, continuing...'
         chown -R www-data:www-data /var/www/html/wp-content/uploads || echo '⚠️  Upload directory ownership failed, continuing...'
+        chown -R www-data:www-data /var/www/html/wp-content/cache || echo '⚠️  Cache directory ownership failed, continuing...'
+        chown -R www-data:www-data /var/www/html/wp-content/temp || echo '⚠️  Temp directory ownership failed, continuing...'
         
         # Ensure wp-content itself is writable for plugin directory creation
         chmod 755 /var/www/html/wp-content || echo '⚠️  wp-content permissions failed, continuing...'
