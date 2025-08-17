@@ -122,20 +122,18 @@ services:
         mkdir -p /var/www/html/wp-content/mu-plugins &&
         chown -R www-data:www-data /var/www/html/wp-content/mu-plugins &&
         chmod -R 755 /var/www/html/wp-content/mu-plugins &&
-        cat > /var/www/html/wp-content/mu-plugins/auto-create-upload-dirs.php << 'MUPHP'
-<?php
-// Temporary mu-plugin for initial setup - will be removed after setup
-add_action('init', 'ensure_base_upload_structure');
-function ensure_base_upload_structure() {
-    if (is_multisite()) {
-        $upload_dir = wp_upload_dir();
-        $sites_dir = $upload_dir['basedir'] . '/sites';
-        if (!file_exists($sites_dir)) {
-            wp_mkdir_p($sites_dir);
-        }
-    }
-}
-MUPHP
+        echo '<?php' > /var/www/html/wp-content/mu-plugins/auto-create-upload-dirs.php &&
+        echo '// Temporary mu-plugin for initial setup - will be removed after setup' >> /var/www/html/wp-content/mu-plugins/auto-create-upload-dirs.php &&
+        echo 'add_action(\"init\", \"ensure_base_upload_structure\");' >> /var/www/html/wp-content/mu-plugins/auto-create-upload-dirs.php &&
+        echo 'function ensure_base_upload_structure() {' >> /var/www/html/wp-content/mu-plugins/auto-create-upload-dirs.php &&
+        echo '    if (is_multisite()) {' >> /var/www/html/wp-content/mu-plugins/auto-create-upload-dirs.php &&
+        echo '        $upload_dir = wp_upload_dir();' >> /var/www/html/wp-content/mu-plugins/auto-create-upload-dirs.php &&
+        echo '        $sites_dir = $upload_dir[\"basedir\"] . \"/sites\";' >> /var/www/html/wp-content/mu-plugins/auto-create-upload-dirs.php &&
+        echo '        if (!file_exists($sites_dir)) {' >> /var/www/html/wp-content/mu-plugins/auto-create-upload-dirs.php &&
+        echo '            wp_mkdir_p($sites_dir);' >> /var/www/html/wp-content/mu-plugins/auto-create-upload-dirs.php &&
+        echo '        }' >> /var/www/html/wp-content/mu-plugins/auto-create-upload-dirs.php &&
+        echo '    }' >> /var/www/html/wp-content/mu-plugins/auto-create-upload-dirs.php &&
+        echo '}' >> /var/www/html/wp-content/mu-plugins/auto-create-upload-dirs.php
         echo '✅ Temporary mu-plugin created for initial setup' &&
         echo '🔧 Switching to www-data user for WordPress operations...' &&
         echo '🔍 Checking if WordPress is already installed...' &&
@@ -191,22 +189,20 @@ MUPHP
           su www-data -s /bin/bash -c 'wp db query \"INSERT IGNORE INTO wp_site (id, domain, path) VALUES (1, \\\"\${DOMAIN_CURRENT_SITE}\\\", \\\"/\\\")\" --allow-root || echo '⚠️  wp_site insert failed, continuing...' &&
           echo '📄 Creating .htaccess for multisite...' &&
           if [ \"\${SUBDOMAIN_INSTALL:-false}\" = \"false\" ]; then
-            cat > /var/www/html/.htaccess << 'HTACCESS'
-RewriteEngine On
-RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
-RewriteBase /
-RewriteRule ^index\.php$ - [L]
-
-# add a trailing slash to /wp-admin
-RewriteRule ^([_0-9a-zA-Z-]+/)?wp-admin$ $1wp-admin/ [R=301,L]
-
-RewriteCond %{REQUEST_FILENAME} -f [OR]
-RewriteCond %{REQUEST_FILENAME} -d
-RewriteRule ^ - [L]
-RewriteRule ^([_0-9a-zA-Z-]+/)?(wp-(content|admin|includes).*) $2 [L]
-RewriteRule ^([_0-9a-zA-Z-]+/)?(.*\.php)$ $2 [L]
-RewriteRule . index.php [L]
-HTACCESS
+            echo 'RewriteEngine On' > /var/www/html/.htaccess &&
+            echo 'RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]' >> /var/www/html/.htaccess &&
+            echo 'RewriteBase /' >> /var/www/html/.htaccess &&
+            echo 'RewriteRule ^index\\.php$ - [L]' >> /var/www/html/.htaccess &&
+            echo '' >> /var/www/html/.htaccess &&
+            echo '# add a trailing slash to /wp-admin' >> /var/www/html/.htaccess &&
+            echo 'RewriteRule ^([_0-9a-zA-Z-]+/)?wp-admin$ \$1wp-admin/ [R=301,L]' >> /var/www/html/.htaccess &&
+            echo '' >> /var/www/html/.htaccess &&
+            echo 'RewriteCond %{REQUEST_FILENAME} -f [OR]' >> /var/www/html/.htaccess &&
+            echo 'RewriteCond %{REQUEST_FILENAME} -d' >> /var/www/html/.htaccess &&
+            echo 'RewriteRule ^ - [L]' >> /var/www/html/.htaccess &&
+            echo 'RewriteRule ^([_0-9a-zA-Z-]+/)?(wp-(content|admin|includes).*) \$2 [L]' >> /var/www/html/.htaccess &&
+            echo 'RewriteRule ^([_0-9a-zA-Z-]+/)?(.*\\.php)$ \$2 [L]' >> /var/www/html/.htaccess &&
+            echo 'RewriteRule . index.php [L]' >> /var/www/html/.htaccess
             chown www-data:www-data /var/www/html/.htaccess;
           fi &&
           echo '🔧 Verifying multisite setup...' &&
