@@ -122,73 +122,19 @@ services:
         mkdir -p /var/www/html/wp-content/mu-plugins &&
         chown -R www-data:www-data /var/www/html/wp-content/mu-plugins &&
         chmod -R 755 /var/www/html/wp-content/mu-plugins &&
-        cat > /var/www/html/wp-content/mu-plugins/auto-create-upload-dirs.php << 'MUPHP'
-<?php
-add_action('wp_handle_upload', 'auto_create_upload_dirs', 10, 2);
-function auto_create_upload_dirs($file, $overrides) {
-    if (!is_multisite()) return $file;
-    $blog_id = get_current_blog_id();
-    $upload_dir = wp_upload_dir();
-    $upload_path = $upload_dir['basedir'];
-    $year = date('Y');
-    $month = date('m');
-    if ($blog_id > 1) {
-        $site_upload_path = $upload_path . '/sites/' . $blog_id;
-        $year_path = $site_upload_path . '/' . $year;
-        $month_path = $year_path . '/' . $month;
-        if (!file_exists($site_upload_path)) wp_mkdir_p($site_upload_path);
-        if (!file_exists($year_path)) wp_mkdir_p($year_path);
-        if (!file_exists($month_path)) wp_mkdir_p($month_path);
-        if (file_exists($month_path)) chmod($month_path, 0755);
-    } else {
-        $year_path = $upload_path . '/' . $year;
-        $month_path = $year_path . '/' . $month;
-        if (!file_exists($year_path)) wp_mkdir_p($year_path);
-        if (!file_exists($month_path)) wp_mkdir_p($month_path);
-        if (file_exists($month_path)) chmod($month_path, 0755);
-    }
-    return $file;
-}
-add_action('add_attachment', 'ensure_upload_dirs_exist');
-function ensure_upload_dirs_exist($attachment_id) {
-    $file_path = get_attached_file($attachment_id);
-    if ($file_path) {
-        $upload_dir = dirname($file_path);
-        if (!file_exists($upload_dir)) {
-            wp_mkdir_p($upload_dir);
-            chmod($upload_dir, 0755);
-        }
-    }
-}
-add_action('wpmu_new_blog', 'setup_blog_upload_dirs');
-function setup_blog_upload_dirs($blog_id) {
-    if ($blog_id > 1) {
-        $upload_dir = wp_upload_dir();
-        $base_upload_path = $upload_dir['basedir'];
-        $site_upload_path = $base_upload_path . '/sites/' . $blog_id;
-        if (!file_exists($site_upload_path)) {
-            wp_mkdir_p($site_upload_path);
-            chmod($site_upload_path, 0755);
-        }
-        $year = date('Y');
-        $month = date('m');
-        $year_path = $site_upload_path . '/' . $year;
-        $month_path = $year_path . '/' . $month;
-        if (!file_exists($year_path)) {
-            wp_mkdir_p($year_path);
-            chmod($year_path, 0755);
-        }
-        if (!file_exists($month_path)) {
-            wp_mkdir_p($month_path);
-            chmod($month_path, 0755);
-        }
-    }
-}
-MUPHP
-        echo '✅ Auto-create upload directories mu-plugin created' &&
-        echo '🔍 Verifying PHP file syntax...' &&
-        head -5 /var/www/html/wp-content/mu-plugins/auto-create-upload-dirs.php &&
-        php -l /var/www/html/wp-content/mu-plugins/auto-create-upload-dirs.php &&
+        echo '<?php' > /var/www/html/wp-content/mu-plugins/auto-create-upload-dirs.php &&
+        echo '// Temporary mu-plugin for initial setup - will be removed after setup' >> /var/www/html/wp-content/mu-plugins/auto-create-upload-dirs.php &&
+        echo 'add_action("init", "ensure_base_upload_structure");' >> /var/www/html/wp-content/mu-plugins/auto-create-upload-dirs.php &&
+        echo 'function ensure_base_upload_structure() {' >> /var/www/html/wp-content/mu-plugins/auto-create-upload-dirs.php &&
+        echo '    if (is_multisite()) {' >> /var/www/html/wp-content/mu-plugins/auto-create-upload-dirs.php &&
+        echo '        $upload_dir = wp_upload_dir();' >> /var/www/html/wp-content/mu-plugins/auto-create-upload-dirs.php &&
+        echo '        $sites_dir = $upload_dir["basedir"] . "/sites";' >> /var/www/html/wp-content/mu-plugins/auto-create-upload-dirs.php &&
+        echo '        if (!file_exists($sites_dir)) {' >> /var/www/html/wp-content/mu-plugins/auto-create-upload-dirs.php &&
+        echo '            wp_mkdir_p($sites_dir);' >> /var/www/html/wp-content/mu-plugins/auto-create-upload-dirs.php &&
+        echo '        }' >> /var/www/html/wp-content/mu-plugins/auto-create-upload-dirs.php &&
+        echo '    }' >> /var/www/html/wp-content/mu-plugins/auto-create-upload-dirs.php &&
+        echo '}' >> /var/www/html/wp-content/mu-plugins/auto-create-upload-dirs.php &&
+        echo '✅ Temporary mu-plugin created for initial setup' &&
         echo '🔧 Switching to www-data user for WordPress operations...' &&
         echo '🔍 Checking if WordPress is already installed...' &&
         if su www-data -s /bin/bash -c 'wp core is-installed --allow-root 2>/dev/null'; then
@@ -296,6 +242,9 @@ MUPHP
           echo '   - Plugins: ✅ Installed (with error handling)' &&
           echo '   - Configuration: ✅ Applied' &&
           echo '🎉 Setup completed! Check logs for any warnings.' &&
+          echo '🧹 Cleaning up temporary mu-plugin...' &&
+          rm -f /var/www/html/wp-content/mu-plugins/auto-create-upload-dirs.php &&
+          echo '✅ Temporary mu-plugin removed - WordPress will handle upload directories automatically' &&
           echo '🎯 Container will exit successfully after installation.' &&
           echo '🔄 To run maintenance tasks, restart the container manually or redeploy the stack.';
         fi &&
