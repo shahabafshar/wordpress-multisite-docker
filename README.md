@@ -160,6 +160,7 @@ The stack uses a **mu-plugin** (Must-Use Plugin) for intelligent directory creat
 - **Maintenance**: No manual directory setup required
 - **Deployment Reliability**: Inline script approach ensures consistent deployment
 - **Smart Restart Policy**: Container runs maintenance tasks on restart/redeployment, not continuously
+- **Permission Management**: Root user sets up directories, www-data user handles WordPress operations
 
 ### 📁 Upload Limits Configuration
 The stack is configured to handle large image files by default:
