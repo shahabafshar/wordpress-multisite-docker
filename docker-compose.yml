@@ -100,8 +100,69 @@ services:
       - ./uploads:/var/www/html/wp-content/uploads
       - ./plugins:/var/www/html/wp-content/plugins
       - ./themes:/var/www/html/wp-content/themes
-      - ./init-wordpress.sh:/opt/init-wordpress.sh:ro
-    command: bash /opt/init-wordpress.sh
+    command: >
+      bash -c "
+      set -e
+      cd /var/www/html || exit 1
+      echo '⏳ Waiting for database and WordPress to be ready...'
+      sleep 15
+      echo '🔧 Setting up upload directory permissions...'
+      mkdir -p /var/www/html/wp-content/uploads/2025/08 || echo '⚠️  Main upload directory creation failed, continuing...'
+      mkdir -p /var/www/html/wp-content/uploads/sites || echo '⚠️  Multisite upload directory creation failed, continuing...'
+      chmod 755 /var/www/html/wp-content || echo '⚠️  wp-content permissions failed, continuing...'
+      chmod 755 /var/www/html/wp-content/uploads || echo '⚠️  uploads permissions failed, continuing...'
+      chown -R www-data:www-data /var/www/html/wp-content/uploads || echo '⚠️  Upload directory ownership failed, continuing...'
+      echo 'Options -Indexes' > /var/www/html/wp-content/uploads/.htaccess || echo '⚠️  Upload .htaccess creation failed, continuing...'
+      echo 'Order deny,allow' >> /var/www/html/wp-content/uploads/.htaccess || echo '⚠️  Upload .htaccess rule 1 failed, continuing...'
+      echo 'Deny from all' >> /var/www/html/wp-content/uploads/.htaccess || echo '⚠️  Upload .htaccess rule 2 failed, continuing...'
+      echo '<FilesMatch \"\\.(jpg|jpeg|png|gif|webp|pdf|doc|docx|xls|xlsx|ppt|pptx|txt|zip|rar)$$\">' >> /var/www/html/wp-content/uploads/.htaccess || echo '⚠️  Upload .htaccess rule 3 failed, continuing...'
+      echo '    Allow from all' >> /var/www/html/wp-content/uploads/.htaccess || echo '⚠️  Upload .htaccess rule 4 failed, continuing...'
+      echo '</FilesMatch>' >> /var/www/html/wp-content/uploads/.htaccess || echo '⚠️  Upload .htaccess rule 5 failed, continuing...'
+      echo '<FilesMatch \"\\.(php|php3|php4|php5|phtml|pl|py|jsp|asp|sh|cgi)$$\">' >> /var/www/html/wp-content/uploads/.htaccess || echo '⚠️  Upload .htaccess rule 6 failed, continuing...'
+      echo '    Deny from all' >> /var/www/html/wp-content/uploads/.htaccess || echo '⚠️  Upload .htaccess rule 7 failed, continuing...'
+      echo '</FilesMatch>' >> /var/www/html/wp-content/uploads/.htaccess || echo '⚠️  Upload .htaccess rule 8 failed, continuing...'
+      echo '🔍 Checking if WordPress is already installed...'
+      if wp core is-installed --allow-root 2>/dev/null; then
+        echo '✅ WordPress is already installed!'
+      else
+        echo '📝 Installing WordPress...'
+        wp core install --url=\"https://\${DOMAIN_CURRENT_SITE}\" --title=\"\${WORDPRESS_TITLE}\" --admin_user=\"\${WORDPRESS_ADMIN_USER}\" --admin_password=\"\${WORDPRESS_ADMIN_PASSWORD}\" --admin_email=\"\${WORDPRESS_ADMIN_EMAIL}\" --skip-email --allow-root
+        echo '🔧 Configuring WordPress...'
+        wp option update home \"https://\${DOMAIN_CURRENT_SITE}\" --allow-root
+        wp option update siteurl \"https://\${DOMAIN_CURRENT_SITE}\" --allow-root
+        wp rewrite structure '/%postname%/' --allow-root
+        wp rewrite flush --allow-root
+        echo '✅ WordPress installed and configured successfully!'
+        echo '🚀 Enabling multisite...'
+        wp core multisite-install --title=\"\${WORDPRESS_TITLE}\" --admin_email=\"\${WORDPRESS_ADMIN_EMAIL}\" --allow-root
+        echo '🔧 Adding multisite constants to wp-config.php...'
+        wp config set WP_ALLOW_MULTISITE true --raw --allow-root
+        wp config set MULTISITE true --raw --allow-root
+        wp config set SUBDOMAIN_INSTALL \"\${SUBDOMAIN_INSTALL:-false}\" --raw --allow-root
+        wp config set DOMAIN_CURRENT_SITE \"\${DOMAIN_CURRENT_SITE}\" --allow-root
+        wp config set PATH_CURRENT_SITE \"/\" --allow-root
+        wp config set SITE_ID_CURRENT_SITE 1 --raw --allow-root
+        wp config set BLOG_ID_CURRENT_SITE 1 --raw --allow-root
+        echo '📄 Creating .htaccess for multisite...'
+        if [ \"\${SUBDOMAIN_INSTALL:-false}\" = \"false\" ]; then
+          echo 'RewriteEngine On' > /var/www/html/.htaccess || echo '⚠️  .htaccess creation failed, continuing...'
+          echo 'RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]' >> /var/www/html/.htaccess || echo '⚠️  .htaccess rule 1 failed, continuing...'
+          echo 'RewriteBase /' >> /var/www/html/.htaccess || echo '⚠️  .htaccess rule 2 failed, continuing...'
+          echo 'RewriteRule ^index\\.php$$ - [L]' >> /var/www/html/.htaccess || echo '⚠️  .htaccess rule 3 failed, continuing...'
+          echo '' >> /var/www/html/.htaccess || echo '⚠️  .htaccess rule 4 failed, continuing...'
+          echo '# add a trailing slash to /wp-admin' >> /var/www/html/.htaccess || echo '⚠️  .htaccess rule 5 failed, continuing...'
+          echo 'RewriteRule ^([_0-9a-zA-Z-]+/)?wp-admin$$ $$1wp-admin/ [R=301,L]' >> /var/www/html/.htaccess || echo '⚠️  .htaccess rule 6 failed, continuing...'
+          echo '' >> /var/www/html/.htaccess || echo '⚠️  .htaccess rule 7 failed, continuing...'
+          echo 'RewriteCond %{REQUEST_FILENAME} -f [OR]' >> /var/www/html/.htaccess || echo '⚠️  .htaccess rule 8 failed, continuing...'
+          echo 'RewriteCond %{REQUEST_FILENAME} -d' >> /var/www/html/.htaccess || echo '⚠️  .htaccess rule 9 failed, continuing...'
+          echo 'RewriteRule ^ - [L]' >> /var/www/html/.htaccess || echo '⚠️  .htaccess rule 10 failed, continuing...'
+          echo 'RewriteRule ^([_0-9a-zA-Z-]+/)?(wp-(content|admin|includes).*) $$2 [L]' >> /var/www/html/.htaccess || echo '⚠️  .htaccess rule 11 failed, continuing...'
+          echo 'RewriteRule ^([_0-9a-zA-Z-]+/)?(.*\\.php)$$ $$2 [L]' >> /var/www/html/.htaccess || echo '⚠️  .htaccess rule 12 failed, continuing...'
+          echo 'RewriteRule . index.php [L]' >> /var/www/html/.htaccess || echo '⚠️  .htaccess rule 13 failed, continuing...'
+        fi
+        echo '✅ WordPress Multisite setup completed!'
+      fi
+      "
     networks:
       - wordpress_network
 
