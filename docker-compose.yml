@@ -195,13 +195,13 @@ services:
             echo 'RewriteRule ^index\\.php$ - [L]' >> /var/www/html/.htaccess &&
             echo '' >> /var/www/html/.htaccess &&
             echo '# add a trailing slash to /wp-admin' >> /var/www/html/.htaccess &&
-            echo 'RewriteRule ^([_0-9a-zA-Z-]+/)?wp-admin$ \$1wp-admin/ [R=301,L]' >> /var/www/html/.htaccess &&
+            echo 'RewriteRule ^wp-admin$ wp-admin/ [R=301,L]' >> /var/www/html/.htaccess &&
             echo '' >> /var/www/html/.htaccess &&
             echo 'RewriteCond %{REQUEST_FILENAME} -f [OR]' >> /var/www/html/.htaccess &&
             echo 'RewriteCond %{REQUEST_FILENAME} -d' >> /var/www/html/.htaccess &&
             echo 'RewriteRule ^ - [L]' >> /var/www/html/.htaccess &&
-            echo 'RewriteRule ^([_0-9a-zA-Z-]+/)?(wp-(content|admin|includes).*) \$2 [L]' >> /var/www/html/.htaccess &&
-            echo 'RewriteRule ^([_0-9a-zA-Z-]+/)?(.*\\.php)$ \$2 [L]' >> /var/www/html/.htaccess &&
+            echo 'RewriteRule ^(wp-(content|admin|includes).*) \$1 [L]' >> /var/www/html/.htaccess &&
+            echo 'RewriteRule ^(.*\\.php)$ \$1 [L]' >> /var/www/html/.htaccess &&
             echo 'RewriteRule . index.php [L]' >> /var/www/html/.htaccess
             chown www-data:www-data /var/www/html/.htaccess;
           fi &&
