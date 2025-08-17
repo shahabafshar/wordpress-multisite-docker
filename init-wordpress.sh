@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+# Ensure we run from the WordPress root
+cd /var/www/html || exit 1
+
 echo '⏳ Waiting for database and WordPress to be ready...'
 sleep 15
 

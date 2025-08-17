@@ -37,11 +37,11 @@ services:
       WORDPRESS_DB_USER: root
       WORDPRESS_DB_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       WORDPRESS_CONFIG_EXTRA: |
-        define('WP_REDIS_HOST', 'redis');
-        define('WP_REDIS_PORT', 6379);
-        define('WP_REDIS_DATABASE', 0);
-        define('WP_REDIS_PASSWORD', '');
-        define('WP_CACHE', true);
+        if (!defined('WP_REDIS_HOST')) define('WP_REDIS_HOST', 'redis');
+        if (!defined('WP_REDIS_PORT')) define('WP_REDIS_PORT', 6379);
+        if (!defined('WP_REDIS_DATABASE')) define('WP_REDIS_DATABASE', 0);
+        if (!defined('WP_REDIS_PASSWORD')) define('WP_REDIS_PASSWORD', '');
+        if (!defined('WP_CACHE')) define('WP_CACHE', true);
         
         # Increase upload limits for high-resolution images
         define('WP_MEMORY_LIMIT', '${MEMORY_LIMIT:-256M}');
@@ -62,7 +62,6 @@ services:
       - ./uploads:/var/www/html/wp-content/uploads
       - ./plugins:/var/www/html/wp-content/plugins
       - ./themes:/var/www/html/wp-content/themes
-      - ./mu-plugins:/var/www/html/wp-content/mu-plugins
     networks:
       - wordpress_network
 
@@ -94,15 +93,15 @@ services:
       INSTALL_UPDRAFTPLUS: ${INSTALL_UPDRAFTPLUS:-true}
       INSTALL_NS_CLONER: ${INSTALL_NS_CLONER:-true}
       HOME: /tmp
+    working_dir: /var/www/html
     volumes:
       - wordpress_data:/var/www/html
       - ./wp-content:/var/www/html/wp-content
       - ./uploads:/var/www/html/wp-content/uploads
       - ./plugins:/var/www/html/wp-content/plugins
       - ./themes:/var/www/html/wp-content/themes
-      - ./mu-plugins:/var/www/html/mu-plugins
-      - ./init-wordpress.sh:/var/www/html/init-wordpress.sh
-    command: bash /var/www/html/init-wordpress.sh
+      - ./init-wordpress.sh:/usr/local/bin/init-wordpress.sh
+    command: bash /usr/local/bin/init-wordpress.sh
     networks:
       - wordpress_network
 
