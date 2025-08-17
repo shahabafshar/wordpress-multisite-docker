@@ -7,6 +7,7 @@ A production-ready WordPress Docker stack with **automatic WordPress Multisite i
 - ✅ **Fully Automated Multisite** - WordPress Multisite installs and configures automatically
 - ✅ **Essential Plugins Included** - Wordfence, Yoast SEO, Contact Form 7, Google Site Kit, UpdraftPlus, NS Cloner, WP Super Cache, WooCommerce, Elementor
 - ✅ **Zero Manual Steps** - No activation scripts or manual configuration needed
+- ✅ **Automatic Upload Permissions** - Upload directories configured with proper permissions at deploy time
 - ✅ **Error-Resilient Installation** - Plugin/theme failures won't stop the setup process
 - ✅ **MariaDB 11.5** - Optimized database backend
 - ✅ **Redis Caching** - Built-in performance optimization
@@ -148,6 +149,22 @@ The stack includes multiple security layers:
 - **Proper Permissions**: Minimal required permissions for web server operation
 - **Network Isolation**: Services only communicate internally
 - **WordPress Security**: Includes Wordfence plugin for additional protection
+
+### 🔧 Automatic Upload Directory Setup
+
+The stack includes an automatic upload permission system that runs before WordPress starts:
+
+- **Pre-creates all necessary directories** - No more "directory doesn't exist" errors
+- **Sets correct permissions** - `www-data:www-data` ownership with group-writable permissions
+- **Year/month structure** - Pre-creates WordPress date-based upload paths for 2 years
+- **Plugin directories** - Elementor, Unlimited Elements, and other common plugin upload paths
+- **Security .htaccess** - Prevents PHP execution in upload directories
+- **Multisite support** - Creates `wp-content/uploads/sites/` for subsite uploads
+
+This eliminates the common WordPress multisite upload errors like:
+- `mkdir(): Permission denied`
+- `mkdir(): No such file or directory` 
+- Plugin upload failures
 
 ### 📁 Upload Limits Configuration
 The stack is configured to handle large image files by default:

@@ -4,17 +4,19 @@ services:
   # ── UPLOAD PERMISSIONS FIX ──
   permfix-uploads:
     image: alpine:3.20
-    user: "0:0"               # run as root to chown the mounted host dir
+    user: "0:0"
     restart: "no"
-    command: >
-      sh -lc '
+    command:
+      - sh
+      - -c
+      - |
         set -e
         BASE=/mnt/wp-content/uploads
-
+        
         # Create and permission the paths multisite needs
         install -d -o 33 -g 33 -m 2775 "$BASE"
         install -d -o 33 -g 33 -m 2775 "$BASE/sites"
-
+        
         # Create year/month structure for current and next year
         current_year=$(date +%Y)
         next_year=$((current_year + 1))
@@ -23,32 +25,29 @@ services:
             install -d -o 33 -g 33 -m 2775 "$BASE/$year/$month"
           done
         done
-
+        
         # Create common plugin directories
         install -d -o 33 -g 33 -m 2775 "$BASE/elementor"
         install -d -o 33 -g 33 -m 2775 "$BASE/unlimited_elements"
-
+        
         # Create security .htaccess
-        cat > "$BASE/.htaccess" << "EOF"
-Options -Indexes
-Order deny,allow
-Deny from all
-<FilesMatch "\.(jpg|jpeg|png|gif|webp|pdf|doc|docx|xls|xlsx|ppt|pptx|txt|zip|rar)$">
-    Allow from all
-</FilesMatch>
-<FilesMatch "\.(php|php3|php4|php5|phtml|pl|py|jsp|asp|sh|cgi)$">
-    Deny from all
-</FilesMatch>
-EOF
+        echo "Options -Indexes" > "$BASE/.htaccess"
+        echo "Order deny,allow" >> "$BASE/.htaccess"
+        echo "Deny from all" >> "$BASE/.htaccess"
+        echo "<FilesMatch \"\.(jpg|jpeg|png|gif|webp|pdf|doc|docx|xls|xlsx|ppt|pptx|txt|zip|rar)\\$\">" >> "$BASE/.htaccess"
+        echo "    Allow from all" >> "$BASE/.htaccess"
+        echo "</FilesMatch>" >> "$BASE/.htaccess"
+        echo "<FilesMatch \"\.(php|php3|php4|php5|phtml|pl|py|jsp|asp|sh|cgi)\\$\">" >> "$BASE/.htaccess"
+        echo "    Deny from all" >> "$BASE/.htaccess"
+        echo "</FilesMatch>" >> "$BASE/.htaccess"
         chown 33:33 "$BASE/.htaccess"
-
+        
         # Fix existing contents
         chown -R 33:33 "$BASE"
         find "$BASE" -type d -exec chmod 2775 {} \;
         find "$BASE" -type f -exec chmod 664 {} \;
         
         echo "✅ Upload permissions fixed successfully"
-      '
     volumes:
       - ./wp-content:/mnt/wp-content
     networks:
