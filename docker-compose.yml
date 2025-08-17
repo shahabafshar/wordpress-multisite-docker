@@ -1,6 +1,59 @@
 version: '3.8'
 
 services:
+  # ── UPLOAD PERMISSIONS FIX ──
+  permfix-uploads:
+    image: alpine:3.20
+    user: "0:0"               # run as root to chown the mounted host dir
+    restart: "no"
+    command: >
+      sh -lc '
+        set -e
+        BASE=/mnt/wp-content/uploads
+
+        # Create and permission the paths multisite needs
+        install -d -o 33 -g 33 -m 2775 "$BASE"
+        install -d -o 33 -g 33 -m 2775 "$BASE/sites"
+
+        # Create year/month structure for current and next year
+        current_year=$(date +%Y)
+        next_year=$((current_year + 1))
+        for year in $current_year $next_year; do
+          for month in $(seq -w 1 12); do
+            install -d -o 33 -g 33 -m 2775 "$BASE/$year/$month"
+          done
+        done
+
+        # Create common plugin directories
+        install -d -o 33 -g 33 -m 2775 "$BASE/elementor"
+        install -d -o 33 -g 33 -m 2775 "$BASE/unlimited_elements"
+
+        # Create security .htaccess
+        cat > "$BASE/.htaccess" << "EOF"
+Options -Indexes
+Order deny,allow
+Deny from all
+<FilesMatch "\.(jpg|jpeg|png|gif|webp|pdf|doc|docx|xls|xlsx|ppt|pptx|txt|zip|rar)$">
+    Allow from all
+</FilesMatch>
+<FilesMatch "\.(php|php3|php4|php5|phtml|pl|py|jsp|asp|sh|cgi)$">
+    Deny from all
+</FilesMatch>
+EOF
+        chown 33:33 "$BASE/.htaccess"
+
+        # Fix existing contents
+        chown -R 33:33 "$BASE"
+        find "$BASE" -type d -exec chmod 2775 {} \;
+        find "$BASE" -type f -exec chmod 664 {} \;
+        
+        echo "✅ Upload permissions fixed successfully"
+      '
+    volumes:
+      - ./wp-content:/mnt/wp-content
+    networks:
+      - wordpress_network
+
   # ── DATABASE ──
   db:
     image: mariadb:${MARIADB_VERSION:-11.5}
@@ -27,8 +80,12 @@ services:
     image: wordpress:latest
     restart: unless-stopped
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_started
+      redis:
+        condition: service_started
+      permfix-uploads:
+        condition: service_completed_successfully
     ports:
       - "8080:80"
     environment:
@@ -59,7 +116,6 @@ services:
     volumes:
       - wordpress_data:/var/www/html
       - ./wp-content:/var/www/html/wp-content
-      - ./uploads:/var/www/html/wp-content/uploads
       - ./plugins:/var/www/html/wp-content/plugins
       - ./themes:/var/www/html/wp-content/themes
     networks:
@@ -71,8 +127,12 @@ services:
     restart: "no"
     user: "0:0"
     depends_on:
-      - db
-      - wordpress
+      db:
+        condition: service_started
+      wordpress:
+        condition: service_started
+      permfix-uploads:
+        condition: service_completed_successfully
     environment:
       WORDPRESS_DB_HOST: ${WORDPRESS_DB_HOST}
       WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME}
@@ -97,7 +157,6 @@ services:
     volumes:
       - wordpress_data:/var/www/html
       - ./wp-content:/var/www/html/wp-content
-      - ./uploads:/var/www/html/wp-content/uploads
       - ./plugins:/var/www/html/wp-content/plugins
       - ./themes:/var/www/html/wp-content/themes
     command:
@@ -108,52 +167,6 @@ services:
         cd /var/www/html || exit 1
         echo '⏳ Waiting for database and WordPress to be ready...'
         sleep 15
-        echo '🔧 Setting up upload directory permissions...'
-        mkdir -p /var/www/html/wp-content/uploads/2025/08 || echo '⚠️  Main upload directory creation failed, continuing...'
-        mkdir -p /var/www/html/wp-content/uploads/sites || echo '⚠️  Multisite upload directory creation failed, continuing...'
-        chmod 755 /var/www/html/wp-content || echo '⚠️  wp-content permissions failed, continuing...'
-        chmod 755 /var/www/html/wp-content/uploads || echo '⚠️  uploads permissions failed, continuing...'
-        chown -R www-data:www-data /var/www/html/wp-content/uploads || echo '⚠️  Upload directory ownership failed, continuing...'
-        echo 'Options -Indexes' > /var/www/html/wp-content/uploads/.htaccess || echo '⚠️  Upload .htaccess creation failed, continuing...'
-        echo 'Order deny,allow' >> /var/www/html/wp-content/uploads/.htaccess || echo '⚠️  Upload .htaccess rule 1 failed, continuing...'
-        echo 'Deny from all' >> /var/www/html/wp-content/uploads/.htaccess || echo '⚠️  Upload .htaccess rule 2 failed, continuing...'
-        echo '<FilesMatch "\.(jpg|jpeg|png|gif|webp|pdf|doc|docx|xls|xlsx|ppt|pptx|txt|zip|rar)$">' >> /var/www/html/wp-content/uploads/.htaccess || echo '⚠️  Upload .htaccess rule 3 failed, continuing...'
-        echo '    Allow from all' >> /var/www/html/wp-content/uploads/.htaccess || echo '⚠️  Upload .htaccess rule 4 failed, continuing...'
-        echo '</FilesMatch>' >> /var/www/html/wp-content/uploads/.htaccess || echo '⚠️  Upload .htaccess rule 5 failed, continuing...'
-        echo '<FilesMatch "\.(php|php3|php4|php5|phtml|pl|py|jsp|asp|sh|cgi)$">' >> /var/www/html/wp-content/uploads/.htaccess || echo '⚠️  Upload .htaccess rule 6 failed, continuing...'
-        echo '    Deny from all' >> /var/www/html/wp-content/uploads/.htaccess || echo '⚠️  Upload .htaccess rule 7 failed, continuing...'
-        echo '</FilesMatch>' >> /var/www/html/wp-content/uploads/.htaccess || echo '⚠️  Upload .htaccess rule 8 failed, continuing...'
-        echo '🔧 Ensuring upload directories exist with proper permissions...'
-        # Always ensure the base upload structure exists
-        mkdir -p /var/www/html/wp-content/uploads/sites || echo '⚠️  Multisite upload directory creation failed, continuing...'
-        mkdir -p /var/www/html/wp-content/uploads/elementor || echo '⚠️  Elementor upload directory creation failed, continuing...'
-        mkdir -p /var/www/html/wp-content/uploads/unlimited_elements || echo '⚠️  Unlimited Elements upload directory creation failed, continuing...'
-        
-        # Create common plugin working directories
-        mkdir -p /var/www/html/wp-content/cache || echo '⚠️  Cache directory creation failed, continuing...'
-        mkdir -p /var/www/html/wp-content/temp || echo '⚠️  Temp directory creation failed, continuing...'
-        mkdir -p /var/www/html/wp-content/ai1wm-backups || echo '⚠️  Backup directory creation failed, continuing...'
-        
-        # Create year/month upload structure for current and next year
-        current_year=$(date +%Y)
-        next_year=$((current_year + 1))
-        for year in $current_year $next_year; do
-          for month in $(seq -w 1 12); do
-            mkdir -p /var/www/html/wp-content/uploads/$year/$month || echo "⚠️  Upload directory $year/$month creation failed, continuing..."
-          done
-        done
-        
-        # Set proper permissions and ownership recursively
-        chmod -R 755 /var/www/html/wp-content/uploads || echo '⚠️  Upload directory permissions failed, continuing...'
-        chmod -R 755 /var/www/html/wp-content/cache || echo '⚠️  Cache directory permissions failed, continuing...'
-        chmod -R 755 /var/www/html/wp-content/temp || echo '⚠️  Temp directory permissions failed, continuing...'
-        chown -R www-data:www-data /var/www/html/wp-content/uploads || echo '⚠️  Upload directory ownership failed, continuing...'
-        chown -R www-data:www-data /var/www/html/wp-content/cache || echo '⚠️  Cache directory ownership failed, continuing...'
-        chown -R www-data:www-data /var/www/html/wp-content/temp || echo '⚠️  Temp directory ownership failed, continuing...'
-        
-        # Ensure wp-content itself is writable for plugin directory creation
-        chmod 755 /var/www/html/wp-content || echo '⚠️  wp-content permissions failed, continuing...'
-        chown www-data:www-data /var/www/html/wp-content || echo '⚠️  wp-content ownership failed, continuing...'
         
         echo '🔍 Checking if WordPress is already installed...'
         if su -s /bin/sh www-data -c 'wp core is-installed' 2>/dev/null; then
