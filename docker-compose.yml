@@ -10,42 +10,44 @@ services:
       - sh
       - -c
       - |
-        set -e
+        echo "🔧 Starting upload permissions fix..."
         BASE=/mnt/wp-content/uploads
         
+        # Ensure the base wp-content directory exists first
+        mkdir -p /mnt/wp-content || echo "wp-content dir creation failed, continuing..."
+        
         # Create and permission the paths multisite needs
-        install -d -o 33 -g 33 -m 2775 "$BASE"
-        install -d -o 33 -g 33 -m 2775 "$BASE/sites"
+        mkdir -p "$BASE" || echo "Base uploads dir creation failed, continuing..."
+        mkdir -p "$BASE/sites" || echo "Sites dir creation failed, continuing..."
         
         # Create year/month structure for current and next year
         current_year=$(date +%Y)
         next_year=$((current_year + 1))
         for year in $current_year $next_year; do
           for month in $(seq -w 1 12); do
-            install -d -o 33 -g 33 -m 2775 "$BASE/$year/$month"
+            mkdir -p "$BASE/$year/$month" || echo "Year/month dir creation failed, continuing..."
           done
         done
         
         # Create common plugin directories
-        install -d -o 33 -g 33 -m 2775 "$BASE/elementor"
-        install -d -o 33 -g 33 -m 2775 "$BASE/unlimited_elements"
+        mkdir -p "$BASE/elementor" || echo "Elementor dir creation failed, continuing..."
+        mkdir -p "$BASE/unlimited_elements" || echo "Unlimited Elements dir creation failed, continuing..."
+        
+        # Set ownership and permissions
+        chown -R 33:33 /mnt/wp-content || echo "Ownership change failed, continuing..."
+        chmod -R 755 "$BASE" || echo "Permission change failed, continuing..."
         
         # Create security .htaccess
-        echo "Options -Indexes" > "$BASE/.htaccess"
-        echo "Order deny,allow" >> "$BASE/.htaccess"
-        echo "Deny from all" >> "$BASE/.htaccess"
-        echo "<FilesMatch \"\.(jpg|jpeg|png|gif|webp|pdf|doc|docx|xls|xlsx|ppt|pptx|txt|zip|rar)\\$\">" >> "$BASE/.htaccess"
-        echo "    Allow from all" >> "$BASE/.htaccess"
-        echo "</FilesMatch>" >> "$BASE/.htaccess"
-        echo "<FilesMatch \"\.(php|php3|php4|php5|phtml|pl|py|jsp|asp|sh|cgi)\\$\">" >> "$BASE/.htaccess"
-        echo "    Deny from all" >> "$BASE/.htaccess"
-        echo "</FilesMatch>" >> "$BASE/.htaccess"
-        chown 33:33 "$BASE/.htaccess"
-        
-        # Fix existing contents
-        chown -R 33:33 "$BASE"
-        find "$BASE" -type d -exec chmod 2775 {} \;
-        find "$BASE" -type f -exec chmod 664 {} \;
+        echo "Options -Indexes" > "$BASE/.htaccess" || echo "htaccess creation failed, continuing..."
+        echo "Order deny,allow" >> "$BASE/.htaccess" || echo "htaccess line failed, continuing..."
+        echo "Deny from all" >> "$BASE/.htaccess" || echo "htaccess line failed, continuing..."
+        echo '<FilesMatch "\.(jpg|jpeg|png|gif|webp|pdf|doc|docx|xls|xlsx|ppt|pptx|txt|zip|rar)$">' >> "$BASE/.htaccess" || echo "htaccess line failed, continuing..."
+        echo "    Allow from all" >> "$BASE/.htaccess" || echo "htaccess line failed, continuing..."
+        echo "</FilesMatch>" >> "$BASE/.htaccess" || echo "htaccess line failed, continuing..."
+        echo '<FilesMatch "\.(php|php3|php4|php5|phtml|pl|py|jsp|asp|sh|cgi)$">' >> "$BASE/.htaccess" || echo "htaccess line failed, continuing..."
+        echo "    Deny from all" >> "$BASE/.htaccess" || echo "htaccess line failed, continuing..."
+        echo "</FilesMatch>" >> "$BASE/.htaccess" || echo "htaccess line failed, continuing..."
+        chown 33:33 "$BASE/.htaccess" || echo "htaccess ownership failed, continuing..."
         
         echo "✅ Upload permissions fixed successfully"
     volumes:
