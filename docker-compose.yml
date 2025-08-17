@@ -91,6 +91,12 @@ services:
       WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME}
       WORDPRESS_DB_USER: root
       WORDPRESS_DB_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      # PHP upload configuration via environment variables
+      PHP_UPLOAD_MAX_FILESIZE: ${UPLOAD_MAX_FILESIZE:-64M}
+      PHP_POST_MAX_SIZE: ${POST_MAX_SIZE:-64M}
+      PHP_MEMORY_LIMIT: ${MEMORY_LIMIT:-256M}
+      PHP_MAX_EXECUTION_TIME: ${MAX_EXECUTION_TIME:-300}
+      PHP_MAX_INPUT_VARS: ${MAX_INPUT_VARS:-3000}
       WORDPRESS_CONFIG_EXTRA: |
         if (!defined('WP_REDIS_HOST')) define('WP_REDIS_HOST', 'redis');
         if (!defined('WP_REDIS_PORT')) define('WP_REDIS_PORT', 6379);
@@ -102,12 +108,16 @@ services:
         define('WP_MEMORY_LIMIT', '${MEMORY_LIMIT:-256M}');
         define('WP_MAX_MEMORY_LIMIT', '${MEMORY_LIMIT:-256M}');
         
-        # PHP upload settings
-        @ini_set('upload_max_filesize', '${UPLOAD_MAX_FILESIZE:-64M}');
-        @ini_set('post_max_size', '${POST_MAX_SIZE:-64M}');
-        @ini_set('memory_limit', '${MEMORY_LIMIT:-256M}');
-        @ini_set('max_execution_time', '${MAX_EXECUTION_TIME:-300}');
-        @ini_set('max_input_vars', '${MAX_INPUT_VARS:-3000}');
+        # Force PHP upload settings - multiple methods for compatibility
+        ini_set('upload_max_filesize', '${UPLOAD_MAX_FILESIZE:-64M}');
+        ini_set('post_max_size', '${POST_MAX_SIZE:-64M}');
+        ini_set('memory_limit', '${MEMORY_LIMIT:-256M}');
+        ini_set('max_execution_time', '${MAX_EXECUTION_TIME:-300}');
+        ini_set('max_input_vars', '${MAX_INPUT_VARS:-3000}');
+        
+        # WordPress constants for upload handling
+        if (!defined('WP_MEMORY_LIMIT')) define('WP_MEMORY_LIMIT', '${MEMORY_LIMIT:-256M}');
+        if (!defined('WP_MAX_MEMORY_LIMIT')) define('WP_MAX_MEMORY_LIMIT', '${MEMORY_LIMIT:-256M}');
         
         if (!defined('WP_DEBUG')) define('WP_DEBUG', false);
         if (!defined('WP_DEBUG_LOG')) define('WP_DEBUG_LOG', false);
@@ -241,6 +251,19 @@ services:
           chown www-data:www-data /var/www/html/.htaccess 2>/dev/null || echo '⚠️  .htaccess ownership failed, continuing...'
           echo '✅ WordPress Multisite setup completed!'
         fi
+        
+        echo '🔧 Configuring upload limits...'
+        # Create .htaccess rules for upload limits (works with Apache)
+        echo '' >> /var/www/html/.htaccess || echo '⚠️  .htaccess upload config failed, continuing...'
+        echo '# Upload size configuration' >> /var/www/html/.htaccess || echo '⚠️  .htaccess upload config failed, continuing...'
+        echo "php_value upload_max_filesize ${UPLOAD_MAX_FILESIZE:-64M}" >> /var/www/html/.htaccess || echo '⚠️  .htaccess upload config failed, continuing...'
+        echo "php_value post_max_size ${POST_MAX_SIZE:-64M}" >> /var/www/html/.htaccess || echo '⚠️  .htaccess upload config failed, continuing...'
+        echo "php_value memory_limit ${MEMORY_LIMIT:-256M}" >> /var/www/html/.htaccess || echo '⚠️  .htaccess upload config failed, continuing...'
+        echo "php_value max_execution_time ${MAX_EXECUTION_TIME:-300}" >> /var/www/html/.htaccess || echo '⚠️  .htaccess upload config failed, continuing...'
+        echo "php_value max_input_vars ${MAX_INPUT_VARS:-3000}" >> /var/www/html/.htaccess || echo '⚠️  .htaccess upload config failed, continuing...'
+        chown www-data:www-data /var/www/html/.htaccess 2>/dev/null || echo '⚠️  .htaccess ownership failed, continuing...'
+        
+        echo '✅ WordPress configuration completed successfully!'
     networks:
       - wordpress_network
 
