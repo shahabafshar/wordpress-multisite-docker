@@ -126,8 +126,16 @@ services:
         echo '🔧 Ensuring upload directories exist with proper permissions...'
         # Always ensure the base upload structure exists
         mkdir -p /var/www/html/wp-content/uploads/sites || echo '⚠️  Multisite upload directory creation failed, continuing...'
-        chmod 755 /var/www/html/wp-content/uploads || echo '⚠️  Upload directory permissions failed, continuing...'
+        mkdir -p /var/www/html/wp-content/uploads/elementor || echo '⚠️  Elementor upload directory creation failed, continuing...'
+        mkdir -p /var/www/html/wp-content/uploads/unlimited_elements || echo '⚠️  Unlimited Elements upload directory creation failed, continuing...'
+        
+        # Set proper permissions and ownership
+        chmod -R 755 /var/www/html/wp-content/uploads || echo '⚠️  Upload directory permissions failed, continuing...'
         chown -R www-data:www-data /var/www/html/wp-content/uploads || echo '⚠️  Upload directory ownership failed, continuing...'
+        
+        # Ensure wp-content itself is writable for plugin directory creation
+        chmod 755 /var/www/html/wp-content || echo '⚠️  wp-content permissions failed, continuing...'
+        chown www-data:www-data /var/www/html/wp-content || echo '⚠️  wp-content ownership failed, continuing...'
         
         echo '🔍 Checking if WordPress is already installed...'
         if su -s /bin/sh www-data -c 'wp core is-installed' 2>/dev/null; then
