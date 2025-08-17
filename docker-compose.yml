@@ -30,6 +30,17 @@ services:
         mkdir -p /mnt/wp-content/uploads/elementor || echo "Elementor dir creation failed, continuing..."
         mkdir -p /mnt/wp-content/uploads/unlimited_elements || echo "Unlimited Elements dir creation failed, continuing..."
         
+        # Create custom PHP configuration for uploads
+        mkdir -p /mnt/php-config || echo "PHP config dir creation failed, continuing..."
+        echo "; Custom PHP Upload Configuration" > /mnt/php-config/uploads.ini || echo "PHP ini creation failed, continuing..."
+        echo "upload_max_filesize = 64M" >> /mnt/php-config/uploads.ini || echo "PHP ini config failed, continuing..."
+        echo "post_max_size = 64M" >> /mnt/php-config/uploads.ini || echo "PHP ini config failed, continuing..."
+        echo "memory_limit = 256M" >> /mnt/php-config/uploads.ini || echo "PHP ini config failed, continuing..."
+        echo "max_execution_time = 300" >> /mnt/php-config/uploads.ini || echo "PHP ini config failed, continuing..."
+        echo "max_input_vars = 3000" >> /mnt/php-config/uploads.ini || echo "PHP ini config failed, continuing..."
+        echo "max_input_time = 300" >> /mnt/php-config/uploads.ini || echo "PHP ini config failed, continuing..."
+        echo "file_uploads = On" >> /mnt/php-config/uploads.ini || echo "PHP ini config failed, continuing..."
+        
         # Set ownership and permissions
         chown -R 33:33 /mnt/wp-content || echo "Ownership change failed, continuing..."
         chmod -R 755 /mnt/wp-content/uploads || echo "Permission change failed, continuing..."
@@ -49,6 +60,7 @@ services:
         echo "✅ Upload permissions fixed successfully"
     volumes:
       - ./wp-content:/mnt/wp-content
+      - ./php-config:/mnt/php-config
     networks:
       - wordpress_network
 
@@ -126,6 +138,7 @@ services:
       - ./wp-content:/var/www/html/wp-content
       - ./plugins:/var/www/html/wp-content/plugins
       - ./themes:/var/www/html/wp-content/themes
+      - ./php-config/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini:ro
     networks:
       - wordpress_network
 
@@ -252,16 +265,7 @@ services:
           echo '✅ WordPress Multisite setup completed!'
         fi
         
-        echo '🔧 Configuring upload limits...'
-        # Create .htaccess rules for upload limits (works with Apache)
-        echo '' >> /var/www/html/.htaccess || echo '⚠️  .htaccess upload config failed, continuing...'
-        echo '# Upload size configuration' >> /var/www/html/.htaccess || echo '⚠️  .htaccess upload config failed, continuing...'
-        echo "php_value upload_max_filesize ${UPLOAD_MAX_FILESIZE:-64M}" >> /var/www/html/.htaccess || echo '⚠️  .htaccess upload config failed, continuing...'
-        echo "php_value post_max_size ${POST_MAX_SIZE:-64M}" >> /var/www/html/.htaccess || echo '⚠️  .htaccess upload config failed, continuing...'
-        echo "php_value memory_limit ${MEMORY_LIMIT:-256M}" >> /var/www/html/.htaccess || echo '⚠️  .htaccess upload config failed, continuing...'
-        echo "php_value max_execution_time ${MAX_EXECUTION_TIME:-300}" >> /var/www/html/.htaccess || echo '⚠️  .htaccess upload config failed, continuing...'
-        echo "php_value max_input_vars ${MAX_INPUT_VARS:-3000}" >> /var/www/html/.htaccess || echo '⚠️  .htaccess upload config failed, continuing...'
-        chown www-data:www-data /var/www/html/.htaccess 2>/dev/null || echo '⚠️  .htaccess ownership failed, continuing...'
+        echo '🔧 PHP upload configuration already set by permfix service'
         
         echo '✅ WordPress configuration completed successfully!'
     networks:
