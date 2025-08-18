@@ -145,6 +145,8 @@ services:
         
         # Create a custom PHP configuration that will be mounted
         mkdir -p /var/www/html/php-uploads-config || echo "PHP uploads config dir creation failed, continuing..."
+        # Ensure we can write to this directory
+        chmod 755 /var/www/html/php-uploads-config || echo "PHP uploads config dir chmod failed, continuing..."
         echo "; WordPress Upload Override" > /var/www/html/php-uploads-config/uploads.ini || echo "PHP uploads ini creation failed, continuing..."
         echo "upload_max_filesize = ${UPLOAD_MAX_FILESIZE:-64M}" >> /var/www/html/php-uploads-config/uploads.ini || echo "PHP uploads ini failed, continuing..."
         echo "post_max_size = ${POST_MAX_SIZE:-64M}" >> /var/www/html/php-uploads-config/uploads.ini || echo "PHP uploads ini failed, continuing..."
@@ -300,6 +302,9 @@ services:
         
         echo "=== Final WordPress Upload Test ==="
         sleep 3  # Wait for potential restart
+        echo "Testing PHP settings after all overrides:"
+        php -r "echo 'upload_max_filesize: ' . ini_get('upload_max_filesize') . PHP_EOL; echo 'post_max_size: ' . ini_get('post_max_size') . PHP_EOL; echo 'memory_limit: ' . ini_get('memory_limit') . PHP_EOL;"
+        echo "Testing WordPress upload size:"
         wp eval 'echo "Final WordPress max upload: " . size_format(wp_max_upload_size()) . "\\n";' || echo '⚠️  Final WordPress upload check failed, continuing...'
         
         echo "=== Debug File System ==="
@@ -312,10 +317,34 @@ services:
         mkdir -p /var/www/html/wp-content/mu-plugins || echo "MU plugins dir creation failed, continuing..."
         echo '<?php' > /var/www/html/wp-content/mu-plugins/force-upload-limits.php || echo 'MU plugin creation failed, continuing...'
         echo '// Force Upload Limits - Must Use Plugin' >> /var/www/html/wp-content/mu-plugins/force-upload-limits.php || echo 'MU plugin creation failed, continuing...'
-        echo 'add_filter("upload_size_limit", function() { return '$((${UPLOAD_MAX_FILESIZE:-64M} * 1024 * 1024))'; }, 999);' >> /var/www/html/wp-content/mu-plugins/force-upload-limits.php || echo 'MU plugin creation failed, continuing...'
-        echo 'add_filter("wp_max_upload_size", function() { return '$((${UPLOAD_MAX_FILESIZE:-64M} * 1024 * 1024))'; }, 999);' >> /var/www/html/wp-content/mu-plugins/force-upload-limits.php || echo 'MU plugin creation failed, continuing...'
+        echo 'add_filter("upload_size_limit", function() { return 67108864; }, 999);' >> /var/www/html/wp-content/mu-plugins/force-upload-limits.php || echo 'MU plugin creation failed, continuing...'
+        echo 'add_filter("wp_max_upload_size", function() { return 67108864; }, 999);' >> /var/www/html/wp-content/mu-plugins/force-upload-limits.php || echo 'MU plugin creation failed, continuing...'
         echo 'add_action("init", function() { @ini_set("upload_max_filesize", "${UPLOAD_MAX_FILESIZE:-64M}"); @ini_set("post_max_size", "${POST_MAX_SIZE:-64M}"); });' >> /var/www/html/wp-content/mu-plugins/force-upload-limits.php || echo 'MU plugin creation failed, continuing...'
+        echo 'add_action("init", function() { @ini_set("memory_limit", "${MEMORY_LIMIT:-256M}"); @ini_set("max_execution_time", "${MAX_EXECUTION_TIME:-300}"); });' >> /var/www/html/wp-content/mu-plugins/force-upload-limits.php || echo 'MU plugin creation failed, continuing...'
         echo "MU plugin created:" && cat /var/www/html/wp-content/mu-plugins/force-upload-limits.php 2>/dev/null || echo "Failed to read MU plugin"
+        
+        echo "=== Creating PHP Configuration Override ==="
+        # Create a PHP configuration file that will override settings
+        mkdir -p /var/www/html/php-config || echo "PHP config dir creation failed, continuing..."
+        chmod 755 /var/www/html/php-config || echo "PHP config dir chmod failed, continuing..."
+        echo '<?php' > /var/www/html/php-config/upload-override.php || echo 'PHP config override creation failed, continuing...'
+        echo '// PHP Upload Override Configuration' >> /var/www/html/php-config/upload-override.php || echo 'PHP config override failed, continuing...'
+        echo '@ini_set("upload_max_filesize", "${UPLOAD_MAX_FILESIZE:-64M}");' >> /var/www/html/php-config/upload-override.php || echo 'PHP config override failed, continuing...'
+        echo '@ini_set("post_max_size", "${POST_MAX_SIZE:-64M}");' >> /var/www/html/php-config/upload-override.php || echo 'PHP config override failed, continuing...'
+        echo '@ini_set("memory_limit", "${MEMORY_LIMIT:-256M}");' >> /var/www/html/php-config/upload-override.php || echo 'PHP config override failed, continuing...'
+        echo '@ini_set("max_execution_time", "${MAX_EXECUTION_TIME:-300}");' >> /var/www/html/php-config/upload-override.php || echo 'PHP config override failed, continuing...'
+        echo '@ini_set("max_input_vars", "${MAX_INPUT_VARS:-3000}");' >> /var/www/html/php-config/upload-override.php || echo 'PHP config override failed, continuing...'
+        echo "PHP config override created:" && cat /var/www/html/php-config/upload-override.php 2>/dev/null || echo "Failed to read PHP config override"
+        
+        echo "=== Including PHP Config in wp-config.php ==="
+        # Add the PHP configuration include to wp-config.php
+        if ! grep -q "upload-override.php" /var/www/html/wp-config.php 2>/dev/null; then
+          # Find the line before "/* That's all, stop editing! */"
+          sed -i '/\/\* That'\''s all, stop editing! \*\//i require_once __DIR__ . "/php-config/upload-override.php";' /var/www/html/wp-config.php || echo "Failed to add PHP config include to wp-config.php"
+          echo "PHP config include added to wp-config.php"
+        else
+          echo "PHP config include already exists in wp-config.php"
+        fi
         
         echo "=== Creating diagnostic page ==="
         # Create a diagnostic PHP page that works with WordPress
