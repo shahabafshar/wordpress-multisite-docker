@@ -31,8 +31,6 @@ services:
         condition: service_started
       redis:
         condition: service_started
-      wp-init:
-        condition: service_completed_successfully
     ports:
       - "8080:80"
     environment:
