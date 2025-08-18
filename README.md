@@ -44,13 +44,20 @@ A production-ready WordPress Docker stack with **automatic WordPress Multisite i
 
 **✅ That's it!** WordPress Multisite will be automatically installed with all essential plugins and themes.
 
+### **🌐 Multiple Deployments**
+This stack supports **multiple deployments** on the same server without conflicts. See [MULTI-STACK-DEPLOYMENT.md](MULTI-STACK-DEPLOYMENT.md) for detailed instructions.
+
 ### 2. Configure Environment
 
 Edit `.env` file with your settings:
 
 ```env
+# Stack Configuration (REQUIRED for multiple deployments)
+STACK_NAME=wordpress
+EXTERNAL_PORT=8080
+
 # Database settings
-WORDPRESS_DB_HOST=db
+WORDPRESS_DB_HOST=${STACK_NAME:-wordpress}-db
 WORDPRESS_DB_NAME=wordpress
 MYSQL_ROOT_PASSWORD=your-strong-password
 
@@ -65,13 +72,12 @@ WORDPRESS_ADMIN_EMAIL=admin@your-domain.com
 
 # WordPress Multisite settings
 SUBDOMAIN_INSTALL=false
-DOMAIN_CURRENT_SITE=your-domain.com
+DOMAIN_CURRENT_SITE=localhost:${EXTERNAL_PORT:-8080}
 PATH_CURRENT_SITE=/
 SITE_ID_CURRENT_SITE=1
 BLOG_ID_CURRENT_SITE=1
 
 # WordPress exposure
-WORDPRESS_LOCAL_PORT=8080
 MARIADB_VERSION=11.5
 ```
 
