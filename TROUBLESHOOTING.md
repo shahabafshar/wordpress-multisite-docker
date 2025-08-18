@@ -1,45 +1,72 @@
-# WordPress Multisite Docker - Troubleshooting Guide
+# 🔧 Troubleshooting Guide
 
-This guide covers common issues and solutions for the WordPress Multisite Docker stack.
+## Common Issues and Solutions
 
-## 🚨 Common Issues & Solutions
+### 1. WordPress Multisite Not Working
 
-### 1. WordPress Not Responding
-
-**Issue:** Port 8080 not responding after deployment
+**Symptoms:**
+- Redirect loops on subsite admin
+- 404 errors for CSS/JS files
+- "Constant WP_ALLOW_MULTISITE already defined" errors
 
 **Solutions:**
 
-#### Check Container Status
-```bash
-docker ps
-docker logs CONTAINER_NAME-wordpress-1
+#### Check Domain Configuration
+Ensure your `.env` file has the correct domain:
+```env
+DOMAIN_CURRENT_SITE=your-actual-domain.com
 ```
 
-#### Verify Service Dependencies
-The WordPress service depends on:
-- Database (`db`) - must be started
-- Redis (`redis`) - must be started  
-- Initialization (`wp-init`) - must complete successfully
-
+#### Verify HTTPS Configuration
+If using HTTPS, ensure WordPress is configured for it:
 ```bash
-# Check all service statuses
-docker-compose ps
-
-# Check specific service logs
-docker-compose logs db
-docker-compose logs redis
-docker-compose logs wp-init
-docker-compose logs wordpress
+# Check current site URL
+docker exec -it CONTAINER_NAME wp option get home --allow-root
+docker exec -it CONTAINER_NAME wp option get siteurl --allow-root
 ```
 
-#### Restart the Stack
+#### Check Multisite Constants
+Verify multisite is properly configured:
 ```bash
-docker-compose down
-docker-compose up -d
+# Check wp-config.php constants
+docker exec -it CONTAINER_NAME wp config get MULTISITE --allow-root
+docker exec -it CONTAINER_NAME wp config get DOMAIN_CURRENT_SITE --allow-root
 ```
 
-### 2. Initialization Service Issues
+#### Check .htaccess File
+Ensure the .htaccess file exists and has proper multisite rules:
+```bash
+# Check if .htaccess exists
+docker exec -it CONTAINER_NAME ls -la /var/www/html/.htaccess
+
+# View .htaccess content
+docker exec -it CONTAINER_NAME cat /var/www/html/.htaccess
+```
+
+#### Check Database Tables
+Verify multisite database tables are properly set up:
+```bash
+# Check if multisite tables exist
+docker exec -it CONTAINER_NAME wp db query "SHOW TABLES LIKE 'wp_blogs'" --allow-root
+docker exec -it CONTAINER_NAME wp db query "SHOW TABLES LIKE 'wp_site'" --allow-root
+
+# Check if main site is properly registered
+docker exec -it CONTAINER_NAME wp db query "SELECT * FROM wp_blogs WHERE blog_id = 1" --allow-root
+```
+
+### 2. Database Connection Issues
+
+**Error:**
+```
+Access denied for user 'wpuser'@'172.19.0.4' (using password: YES)
+```
+
+**Solution:**
+- Verify `.env` file has correct database credentials
+- Ensure MariaDB container is running
+- Check network connectivity between containers
+
+### 3. WordPress Initialization Issues
 
 **Error:**
 ```
@@ -48,16 +75,19 @@ wp-init container exits with error
 
 **Solutions:**
 
-#### Check Initialization Logs
+#### Check Container Logs
 ```bash
 docker-compose logs wp-init
 ```
 
 #### Verify Database is Ready
-The wp-init container waits for the database. If it fails:
+The wp-init container waits for the database and WordPress. If it fails:
 ```bash
 # Check database container
 docker-compose logs db
+
+# Check WordPress container
+docker-compose logs wordpress
 
 # Restart the stack
 docker-compose restart
@@ -69,7 +99,7 @@ docker-compose restart
 docker exec -it CONTAINER_NAME ls -la /var/www/html/
 ```
 
-### 3. Port Access Issues
+### 4. Port Access Issues
 
 **Issue:** Port 8080 not responding
 
@@ -93,7 +123,7 @@ netstat -tlnp | grep 8080
 docker exec -it CONTAINER_NAME curl localhost
 ```
 
-### 4. Permission Issues
+### 5. Permission Issues
 
 **Error:**
 ```
@@ -101,17 +131,13 @@ Warning: Unable to create directory wp-content/uploads/2025/08
 ```
 
 **Solution:**
-The wp-init service automatically creates all necessary upload directories with proper permissions. If you see this error:
-
+This is normal for host-mounted volumes. WordPress will create directories as needed:
 ```bash
-# Check wp-init logs for permission setup
-docker-compose logs wp-init | grep -i "upload\|permission"
-
-# Restart the initialization service
-docker-compose restart wp-init
+# WordPress handles this automatically
+# No manual intervention required
 ```
 
-### 5. Memory/Resource Issues
+### 6. Memory/Resource Issues
 
 **Error:**
 ```
@@ -120,29 +146,10 @@ Container killed due to memory limit
 
 **Solution:**
 - Increase Docker memory limits
-- Optimize PHP settings via environment variables
+- Optimize PHP settings
 - Monitor resource usage
 
-### 6. Upload Size Issues
-
-**Error:**
-```
-File exceeds maximum upload size
-```
-
-**Solution:**
-The stack is configured for 64MB uploads by default. To increase:
-
-```bash
-# Add to your .env file:
-UPLOAD_MAX_FILESIZE=128M
-POST_MAX_SIZE=128M
-MEMORY_LIMIT=512M
-```
-
-The wp-init service creates a Must-Use plugin that enforces these limits at the WordPress application level.
-
-## 🔍 Debugging Commands
+## Debugging Commands
 
 ### Check Container Logs
 ```bash
@@ -173,81 +180,143 @@ docker exec -it CONTAINER_NAME mysql -u root -p -e "SHOW DATABASES;"
 docker exec -it CONTAINER_NAME-redis-1 redis-cli ping
 
 # Test WordPress
-docker exec -it CONTAINER_NAME curl localhost
+docker exec -it CONTAINER_NAME wp core version --allow-root
 ```
 
-### Check WordPress Status
+### Check Network
 ```bash
-# Access wp-init container
-docker exec -it CONTAINER_NAME-wp-init-1 bash
+# List networks
+docker network ls
 
-# Check WordPress installation
-su -s /bin/sh www-data -c "wp core is-installed"
-
-# Check multisite status
-su -s /bin/sh www-data -c "wp site list"
-
-# Check plugin status
-su -s /bin/sh www-data -c "wp plugin list"
+# Inspect network
+docker network inspect wordpress-multisite-docker_wordpress_network
 ```
 
-## 🚀 Performance Optimization
+## Common Portainer Issues
 
-### Database Optimization
+### 1. Repository Deployment Fails
+
+**Solution:**
+- Check repository URL is correct
+- Verify compose path is `docker-compose.yml`
+- Ensure all required files are in the repository
+
+### 2. Environment Variables Not Loading
+
+**Solution:**
+- Use the Environment Variables section in Portainer
+- Don't rely on `.env` file for repository deployment
+- Add variables manually in Portainer interface
+
+### 3. Volume Mounting Issues
+
+**Solution:**
+- Use named volumes instead of bind mounts
+- Create volumes manually in Portainer if needed
+- Check volume permissions
+
+## Performance Issues
+
+### 1. Slow Loading
+
+**Diagnosis:**
 ```bash
-# Check database performance
-docker exec -it CONTAINER_NAME mysql -u root -p -e "SHOW STATUS LIKE 'Slow_queries';"
+# Check resource usage
+docker stats
+
+# Check WordPress logs
+docker exec -it CONTAINER_NAME tail -f /var/log/apache2/access.log
 ```
 
-### Redis Optimization
+**Solutions:**
+- Enable Redis caching
+- Optimize PHP settings
+- Increase container resources
+
+### 2. High Memory Usage
+
+**Solutions:**
+- Reduce PHP worker processes
+- Optimize MariaDB settings
+- Enable Redis for object caching
+
+## SSL/HTTPS Issues
+
+### 1. SSL Certificate Problems
+
+**Solution:**
+- Use Nginx Proxy Manager for SSL termination
+- Configure SSL in reverse proxy
+- Verify certificate paths and permissions
+
+### 2. Mixed Content Warnings
+
+**Solution:**
+- Update WordPress site URL to HTTPS
+- Configure proper security headers
+- Use relative URLs in content
+
+## Backup and Recovery
+
+### Database Backup
 ```bash
-# Check Redis memory usage
-docker exec -it CONTAINER_NAME-redis-1 redis-cli info memory
+# Create backup
+docker exec -it CONTAINER_NAME mysqldump -u root -p wordpress > backup.sql
+
+# Restore backup
+docker exec -i CONTAINER_NAME mysql -u root -p wordpress < backup.sql
 ```
 
-### WordPress Optimization
+### File Backup
 ```bash
-# Clear WordPress caches
-docker exec -it CONTAINER_NAME-wp-init-1 su -s /bin/sh www-data -c "wp cache flush"
+# Backup WordPress files
+docker cp CONTAINER_NAME:/var/www/html ./wordpress-backup
 
-# Optimize database
-docker exec -it CONTAINER_NAME-wp-init-1 su -s /bin/sh www-data -c "wp db optimize"
+# Backup volumes
+docker run --rm -v wordpress-multisite-docker_wordpress_data:/data -v $(pwd):/backup alpine tar czf /backup/wordpress-backup.tar.gz -C /data .
 ```
 
-## 🔧 Advanced Troubleshooting
+## Getting Help
 
-### Reset WordPress Installation
+1. **Check logs first** - Most issues are visible in container logs
+2. **Verify configuration** - Ensure `.env` file is properly configured
+3. **Test step by step** - Start with basic deployment, then add features
+4. **Use debugging commands** - The commands above help identify issues
+5. **Check documentation** - Review README.md for setup instructions
+
+## Emergency Recovery
+
+If the stack is completely broken:
+
 ```bash
-# Remove WordPress data volume
-docker-compose down
-docker volume rm wordpress-multisite-docker_wordpress_data
+# Stop and remove everything
+docker-compose down -v
 
-# Restart stack (will reinstall WordPress)
+# Clean up volumes
+docker volume prune
+
+# Start fresh
 docker-compose up -d
 ```
 
-### Debug PHP Configuration
+## WP-CLI Management
+
+### Common WP-CLI Commands
 ```bash
-# Check PHP settings inside WordPress container
-docker exec -it CONTAINER_NAME php -i | grep -E "upload_max_filesize|post_max_size|memory_limit"
+# List all sites
+docker exec -it CONTAINER_NAME wp site list --allow-root
+
+# Create new site
+docker exec -it CONTAINER_NAME wp site create --slug=newsite --title="New Site" --allow-root
+
+# Update WordPress
+docker exec -it CONTAINER_NAME wp core update --allow-root
+docker exec -it CONTAINER_NAME wp core update-db --allow-root
+
+# Check multisite status
+docker exec -it CONTAINER_NAME wp core is-installed --network --allow-root
 ```
 
-### Check File System
-```bash
-# Verify upload directory structure
-docker exec -it CONTAINER_NAME ls -la /var/www/html/wp-content/uploads/
+---
 
-# Check permissions
-docker exec -it CONTAINER_NAME ls -la /var/www/html/wp-content/
-```
-
-## 📞 Getting Help
-
-If you continue to experience issues:
-
-1. **Check logs first**: `docker-compose logs [service-name]`
-2. **Verify environment variables**: Check your `.env` file
-3. **Check system resources**: Ensure Docker has enough memory/CPU
-4. **Review service dependencies**: Ensure all services start in correct order
-
-The stack is designed to be self-healing and will automatically retry failed operations during initialization. 
+**Most issues can be resolved by checking logs and verifying the `.env` configuration.** 🔍 

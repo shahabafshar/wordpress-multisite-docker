@@ -1,6 +1,215 @@
 version: '3.8'
 
 services:
+  # ── WORDPRESS INITIALIZATION ──
+  wp-init:
+    image: wordpress:cli
+    restart: "no"
+    user: "0:0"
+    depends_on:
+      db:
+        condition: service_started
+      wordpress:
+        condition: service_started
+    environment:
+      WORDPRESS_DB_HOST: ${WORDPRESS_DB_HOST}
+      WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME}
+      WORDPRESS_DB_USER: root
+      WORDPRESS_DB_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      WORDPRESS_TITLE: ${WORDPRESS_TITLE:-WordPress Multisite}
+      WORDPRESS_ADMIN_USER: ${WORDPRESS_ADMIN_USER:-admin}
+      WORDPRESS_ADMIN_PASSWORD: ${WORDPRESS_ADMIN_PASSWORD:-admin123}
+      WORDPRESS_ADMIN_EMAIL: ${WORDPRESS_ADMIN_EMAIL:-admin@example.com}
+      DOMAIN_CURRENT_SITE: ${DOMAIN_CURRENT_SITE:-localhost:8080}
+      SUBDOMAIN_INSTALL: ${SUBDOMAIN_INSTALL:-false}
+      INSTALL_WORDFENCE: ${INSTALL_WORDFENCE:-true}
+      INSTALL_YOAST_SEO: ${INSTALL_YOAST_SEO:-true}
+      INSTALL_CONTACT_FORM_7: ${INSTALL_CONTACT_FORM_7:-true}
+      INSTALL_WOOCOMMERCE: ${INSTALL_WOOCOMMERCE:-true}
+      INSTALL_ELEMENTOR: ${INSTALL_ELEMENTOR:-true}
+      INSTALL_GOOGLE_SITE_KIT: ${INSTALL_GOOGLE_SITE_KIT:-true}
+      INSTALL_UPDRAFTPLUS: ${INSTALL_UPDRAFTPLUS:-true}
+      INSTALL_NS_CLONER: ${INSTALL_NS_CLONER:-true}
+      HOME: /tmp
+    working_dir: /var/www/html
+    volumes:
+      - wordpress_data:/var/www/html
+      - ./wp-content:/var/www/html/wp-content
+      - ./plugins:/var/www/html/wp-content/plugins
+      - ./themes:/var/www/html/wp-content/themes
+    command:
+      - bash
+      - -c
+      - |
+        set -e
+        
+        echo "🚀 Starting WordPress initialization..."
+        
+        # Wait for WordPress to be ready
+        echo "⏳ Waiting for WordPress to be ready..."
+        sleep 15
+        
+        # Step 1: Fix upload directory permissions (consolidated from permfix-uploads)
+        echo "🔧 Setting up upload directory permissions..."
+        
+        # Create the full directory structure step by step
+        mkdir -p /var/www/html/wp-content/uploads || echo "uploads dir creation failed, continuing..."
+        mkdir -p /var/www/html/wp-content/uploads/sites || echo "sites dir creation failed, continuing..."
+        
+        # Create year/month structure for current and next year
+        current_year=$(date +%Y)
+        next_year=$((current_year + 1))
+        for year in $current_year $next_year; do
+          for month in $(seq -w 1 12); do
+            mkdir -p "/var/www/html/wp-content/uploads/$year/$month" || echo "Year/month dir creation failed, continuing..."
+          done
+        done
+        
+        # Create common plugin directories
+        mkdir -p /var/www/html/wp-content/uploads/elementor || echo "Elementor dir creation failed, continuing..."
+        mkdir -p /var/www/html/wp-content/uploads/unlimited_elements || echo "Unlimited Elements dir creation failed, continuing..."
+        mkdir -p /var/www/html/wp-content/uploads/unlimited_elements_cache || echo "Unlimited Elements cache dir creation failed, continuing..."
+        
+        # Set ownership and permissions
+        chown -R 33:33 /var/www/html/wp-content || echo "Ownership change failed, continuing..."
+        chmod -R 755 /var/www/html/wp-content/uploads || echo "Permission change failed, continuing..."
+        
+        # Specifically fix unlimited_elements_cache permissions
+        chmod 777 /var/www/html/wp-content/uploads/unlimited_elements_cache || echo "Unlimited elements cache chmod failed, continuing..."
+        chown -R 33:33 /var/www/html/wp-content/uploads/unlimited_elements_cache || echo "Unlimited elements cache chown failed, continuing..."
+        
+        # Create security .htaccess
+        echo "Options -Indexes" > /var/www/html/wp-content/uploads/.htaccess || echo "htaccess creation failed, continuing..."
+        echo "Order deny,allow" >> /var/www/html/wp-content/uploads/.htaccess || echo "htaccess line failed, continuing..."
+        echo "Deny from all" >> /var/www/html/wp-content/uploads/.htaccess || echo "htaccess line failed, continuing..."
+        echo '<FilesMatch "\.(jpg|jpeg|png|gif|webp|pdf|doc|docx|xls|xlsx|ppt|pptx|txt|zip|rar)$">' >> /var/www/html/wp-content/uploads/.htaccess || echo "htaccess line failed, continuing..."
+        echo "    Allow from all" >> /var/www/html/wp-content/uploads/.htaccess || echo "htaccess line failed, continuing..."
+        echo "</FilesMatch>" >> /var/www/html/wp-content/uploads/.htaccess || echo "htaccess line failed, continuing..."
+        echo '<FilesMatch "\.(php|php3|php4|php5|phtml|pl|py|jsp|asp|sh|cgi)$">' >> /var/www/html/wp-content/uploads/.htaccess || echo "htaccess line failed, continuing..."
+        echo "    Deny from all" >> /var/www/html/wp-content/uploads/.htaccess || echo "htaccess line failed, continuing..."
+        echo "</FilesMatch>" >> /var/www/html/wp-content/uploads/.htaccess || echo "htaccess line failed, continuing..."
+        chown 33:33 /var/www/html/wp-content/uploads/.htaccess || echo "htaccess ownership failed, continuing..."
+        
+        echo "✅ Upload permissions fixed successfully"
+        
+        # Step 2: Check if WordPress is already installed
+        echo "🔍 Checking WordPress installation status..."
+        if ! su -s /bin/sh www-data -c "wp core is-installed --allow-root" 2>/dev/null; then
+          echo "📦 WordPress not installed, installing now..."
+          
+          # Install WordPress
+          su -s /bin/sh www-data -c "wp core install --url=\${DOMAIN_CURRENT_SITE} --title=\${WORDPRESS_TITLE} --admin_user=\${WORDPRESS_ADMIN_USER} --admin_password=\${WORDPRESS_ADMIN_PASSWORD} --admin_email=\${WORDPRESS_ADMIN_EMAIL} --skip-email --allow-root" || echo "⚠️ WordPress installation failed, continuing..."
+          
+          # Enable multisite
+          echo "🌐 Enabling multisite..."
+          su -s /bin/sh www-data -c "wp core multisite-convert --title=\${WORDPRESS_TITLE} --allow-root" || echo "⚠️ Multisite conversion failed, continuing..."
+          
+          # Create .htaccess for multisite
+          echo "📝 Creating .htaccess for multisite..."
+          su -s /bin/sh www-data -c "wp rewrite flush --hard --allow-root" || echo "⚠️ .htaccess creation failed, continuing..."
+          
+          echo "✅ WordPress multisite installed successfully"
+        else
+          echo "✅ WordPress already installed, skipping installation"
+        fi
+        
+        # Step 3: Install and activate plugins
+        echo "🔌 Installing plugins..."
+        
+        # Wordfence Security
+        if [ "\${INSTALL_WORDFENCE}" = "true" ]; then
+          echo "🛡️ Installing Wordfence Security..."
+          su -s /bin/sh www-data -c "wp plugin install wordfence --activate --network --allow-root" || echo "⚠️ Wordfence installation failed, continuing..."
+        fi
+        
+        # Yoast SEO
+        if [ "\${INSTALL_YOAST_SEO}" = "true" ]; then
+          echo "🔍 Installing Yoast SEO..."
+          su -s /bin/sh www-data -c "wp plugin install wordpress-seo --activate --network --allow-root" || echo "⚠️ Yoast SEO installation failed, continuing..."
+        fi
+        
+        # Contact Form 7
+        if [ "\${INSTALL_CONTACT_FORM_7}" = "true" ]; then
+          echo "📝 Installing Contact Form 7..."
+          su -s /bin/sh www-data -c "wp plugin install contact-form-7 --activate --network --allow-root" || echo "⚠️ Contact Form 7 installation failed, continuing..."
+        fi
+        
+        # WooCommerce
+        if [ "\${INSTALL_WOOCOMMERCE}" = "true" ]; then
+          echo "🛒 Installing WooCommerce..."
+          su -s /bin/sh www-data -c "wp plugin install woocommerce --activate --network --allow-root" || echo "⚠️ WooCommerce installation failed, continuing..."
+        fi
+        
+        # Elementor
+        if [ "\${INSTALL_ELEMENTOR}" = "true" ]; then
+          echo "🎨 Installing Elementor..."
+          su -s /bin/sh www-data -c "wp plugin install elementor --activate --network --allow-root" || echo "⚠️ Elementor installation failed, continuing..."
+        fi
+        
+        # Google Site Kit
+        if [ "\${INSTALL_GOOGLE_SITE_KIT}" = "true" ]; then
+          echo "📊 Installing Google Site Kit..."
+          su -s /bin/sh www-data -c "wp plugin install google-site-kit --activate --network --allow-root" || echo "⚠️ Google Site Kit installation failed, continuing..."
+        fi
+        
+        # UpdraftPlus
+        if [ "\${INSTALL_UPDRAFTPLUS}" = "true" ]; then
+          echo "💾 Installing UpdraftPlus..."
+          su -s /bin/sh www-data -c "wp plugin install updraftplus --activate --network --allow-root" || echo "⚠️ UpdraftPlus installation failed, continuing..."
+        fi
+        
+        # NS Cloner
+        if [ "\${INSTALL_NS_CLONER}" = "true" ]; then
+          echo "🔄 Installing NS Cloner..."
+          su -s /bin/sh www-data -c "wp plugin install ns-cloner-site-copier --activate --network --allow-root" || echo "⚠️ NS Cloner installation failed, continuing..."
+        fi
+        
+        # Always install WP Super Cache (replaces WP Rocket)
+        echo "⚡ Installing WP Super Cache..."
+        su -s /bin/sh www-data -c "wp plugin install wp-super-cache --activate --network --allow-root" || echo "⚠️ WP Super Cache installation failed, continuing..."
+        
+        # Step 4: Install and activate themes
+        echo "🎨 Installing themes..."
+        
+        # Hello Elementor theme
+        echo "🎨 Installing Hello Elementor theme..."
+        su -s /bin/sh www-data -c "wp theme install hello-elementor --activate --network --allow-root" || echo "⚠️ Hello Elementor theme installation failed, continuing..."
+        
+        # Twenty Twenty-Four theme
+        echo "🎨 Installing Twenty Twenty-Four theme..."
+        su -s /bin/sh www-data -c "wp theme install twentytwentyfour --allow-root" || echo "⚠️ Twenty Twenty-Four theme installation failed, continuing..."
+        
+        # Step 5: Create Must-Use plugin for upload limits
+        echo "🔧 Creating Must-Use plugin for upload limits..."
+        mkdir -p /var/www/html/wp-content/mu-plugins || echo "MU plugins dir creation failed, continuing..."
+        echo '<?php' > /var/www/html/wp-content/mu-plugins/force-upload-limits.php || echo 'MU plugin creation failed, continuing...'
+        echo '// Force Upload Limits - Must Use Plugin' >> /var/www/html/wp-content/mu-plugins/force-upload-limits.php || echo 'MU plugin creation failed, continuing...'
+        echo 'add_filter("upload_size_limit", function() { return 67108864; }, 999);' >> /var/www/html/wp-content/mu-plugins/force-upload-limits.php || echo 'MU plugin creation failed, continuing...'
+        echo 'add_filter("wp_max_upload_size", function() { return 67108864; }, 999);' >> /var/www/html/wp-content/mu-plugins/force-upload-limits.php || echo 'MU plugin creation failed, continuing...'
+        echo 'add_action("init", function() { @ini_set("upload_max_filesize", "64M"); @ini_set("post_max_size", "64M"); });' >> /var/www/html/wp-content/mu-plugins/force-upload-limits.php || echo 'MU plugin creation failed, continuing...'
+        chown www-data:www-data /var/www/html/wp-content/mu-plugins/force-upload-limits.php 2>/dev/null || echo 'MU plugin ownership failed, continuing...'
+        
+        # Step 6: Final configuration
+        echo "⚙️ Applying final configuration..."
+        
+        # Update WordPress options
+        su -s /bin/sh www-data -c "wp option update blogname '\${WORDPRESS_TITLE}' --allow-root" || echo "⚠️ Blog name update failed, continuing..."
+        su -s /bin/sh www-data -c "wp option update blogdescription 'WordPress Multisite Installation' --allow-root" || echo "⚠️ Blog description update failed, continuing..."
+        
+        # Set upload directory permissions
+        chown -R www-data:www-data /var/www/html/wp-content/uploads || echo "⚠️ Final upload permissions failed, continuing..."
+        
+        echo "🎉 WordPress multisite initialization completed successfully!"
+        echo "📋 Summary:"
+        echo "   - Upload directories created and secured"
+        echo "   - WordPress multisite installed and configured"
+        echo "   - Essential plugins installed and activated"
+        echo "   - Themes installed"
+        echo "   - Upload limits configured via MU plugin"
+        echo "   - Security measures applied"
+    networks:
+      - wordpress_network
+
   # ── DATABASE ──
   db:
     image: mariadb:${MARIADB_VERSION:-11.5}
@@ -76,246 +285,16 @@ services:
       - ./wp-content:/var/www/html/wp-content
       - ./plugins:/var/www/html/wp-content/plugins
       - ./themes:/var/www/html/wp-content/themes
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
     networks:
       - wordpress_network
 
-  # ── SINGLE INITIALIZATION SERVICE ──
-  wp-init:
-    image: wordpress:cli
-    restart: "no"
-    user: "0:0"
-    depends_on:
-      db:
-        condition: service_started
-      wordpress:
-        condition: service_healthy
-    environment:
-      WORDPRESS_DB_HOST: ${WORDPRESS_DB_HOST}
-      WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME}
-      WORDPRESS_DB_USER: root
-      WORDPRESS_DB_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      WORDPRESS_TITLE: ${WORDPRESS_TITLE:-WordPress Multisite}
-      WORDPRESS_ADMIN_USER: ${WORDPRESS_ADMIN_USER:-admin}
-      WORDPRESS_ADMIN_PASSWORD: ${WORDPRESS_ADMIN_PASSWORD:-admin123}
-      WORDPRESS_ADMIN_EMAIL: ${WORDPRESS_ADMIN_EMAIL:-admin@example.com}
-      DOMAIN_CURRENT_SITE: ${DOMAIN_CURRENT_SITE:-localhost:8080}
-      SUBDOMAIN_INSTALL: ${SUBDOMAIN_INSTALL:-false}
-      INSTALL_WORDFENCE: ${INSTALL_WORDFENCE:-true}
-      INSTALL_YOAST_SEO: ${INSTALL_YOAST_SEO:-true}
-      INSTALL_CONTACT_FORM_7: ${INSTALL_CONTACT_FORM_7:-true}
-      INSTALL_WOOCOMMERCE: ${INSTALL_WOOCOMMERCE:-true}
-      INSTALL_ELEMENTOR: ${INSTALL_ELEMENTOR:-true}
-      INSTALL_GOOGLE_SITE_KIT: ${INSTALL_GOOGLE_SITE_KIT:-true}
-      INSTALL_UPDRAFTPLUS: ${INSTALL_UPDRAFTPLUS:-true}
-      INSTALL_NS_CLONER: ${INSTALL_NS_CLONER:-true}
-      HOME: /tmp
-    working_dir: /var/www/html
-    volumes:
-      - wordpress_data:/var/www/html
-      - ./wp-content:/var/www/html/wp-content
-      - ./plugins:/var/www/html/wp-content/plugins
-      - ./themes:/var/www/html/wp-content/themes
-    command:
-      - bash
-      - -c
-      - |
-        set -e
-        
-        echo "🚀 Starting WordPress initialization..."
-        
-        # Services are ready (handled by depends_on with health checks)
-        echo "⏳ Services are ready, starting initialization..."
-        
-        # Give WordPress a moment to fully initialize
-        echo "⏳ Allowing WordPress to fully initialize..."
-        sleep 10
-        
-        # Verify database connection by checking if we can access WordPress files
-        echo "🔍 Verifying database connectivity..."
-        if [ ! -f "/var/www/html/wp-config.php" ]; then
-          echo "❌ WordPress configuration not found, waiting longer..."
-          sleep 15
-        fi
-        echo "✅ Database connectivity verified"
-        
-        # 1. FIX UPLOAD PERMISSIONS (consolidated from permfix-uploads)
-        echo "🔧 Setting up upload directory permissions..."
-        
-        # Create main site upload directories
-        mkdir -p /var/www/html/wp-content/uploads/2025/08 || echo "⚠️ Main upload directory creation failed, continuing..."
-        mkdir -p /var/www/html/wp-content/uploads/sites || echo "⚠️ Multisite upload directory creation failed, continuing..."
-        
-        # Create year/month structure for current and next year
-        current_year=$(date +%Y)
-        next_year=$((current_year + 1))
-        for year in $current_year $next_year; do
-          for month in $(seq -w 1 12); do
-            mkdir -p "/var/www/html/wp-content/uploads/$year/$month" || echo "⚠️ Year/month dir creation failed, continuing..."
-          done
-        done
-        
-        # Create common plugin directories
-        mkdir -p /var/www/html/wp-content/uploads/elementor || echo "⚠️ Elementor dir creation failed, continuing..."
-        mkdir -p /var/www/html/wp-content/uploads/unlimited_elements || echo "⚠️ Unlimited Elements dir creation failed, continuing..."
-        mkdir -p /var/www/html/wp-content/uploads/unlimited_elements_cache || echo "⚠️ Unlimited Elements cache dir creation failed, continuing..."
-        
-        # Set proper permissions and ownership
-        chown -R 33:33 /var/www/html/wp-content || echo "⚠️ Ownership change failed, continuing..."
-        chmod -R 755 /var/www/html/wp-content/uploads || echo "⚠️ Permission change failed, continuing..."
-        chmod 777 /var/www/html/wp-content/uploads/unlimited_elements_cache || echo "⚠️ Unlimited elements cache chmod failed, continuing..."
-        
-        # Create security .htaccess for uploads
-        echo "Options -Indexes" > /var/www/html/wp-content/uploads/.htaccess || echo "⚠️ htaccess creation failed, continuing..."
-        echo "Order deny,allow" >> /var/www/html/wp-content/uploads/.htaccess || echo "⚠️ htaccess line failed, continuing..."
-        echo "Deny from all" >> /var/www/html/wp-content/uploads/.htaccess || echo "⚠️ htaccess line failed, continuing..."
-        echo '<FilesMatch "\.(jpg|jpeg|png|gif|webp|pdf|doc|docx|xls|xlsx|ppt|pptx|txt|zip|rar)$">' >> /var/www/html/wp-content/uploads/.htaccess || echo "⚠️ htaccess line failed, continuing..."
-        echo "    Allow from all" >> /var/www/html/wp-content/uploads/.htaccess || echo "⚠️ htaccess line failed, continuing..."
-        echo "</FilesMatch>" >> /var/www/html/wp-content/uploads/.htaccess || echo "⚠️ htaccess line failed, continuing..."
-        echo '<FilesMatch "\.(php|php3|php4|php5|phtml|pl|py|jsp|asp|sh|cgi)$">' >> /var/www/html/wp-content/uploads/.htaccess || echo "⚠️ htaccess line failed, continuing..."
-        echo "    Deny from all" >> /var/www/html/wp-content/uploads/.htaccess || echo "⚠️ htaccess line failed, continuing..."
-        echo "</FilesMatch>" >> /var/www/html/wp-content/uploads/.htaccess || echo "⚠️ htaccess line failed, continuing..."
-        chown 33:33 /var/www/html/wp-content/uploads/.htaccess || echo "⚠️ htaccess ownership failed, continuing..."
-        
-        echo "✅ Upload permissions fixed successfully"
-        
-        # 2. CHECK IF WORDPRESS IS INSTALLED
-        if ! su -s /bin/sh www-data -c "wp core is-installed" 2>/dev/null; then
-          echo "📦 Installing WordPress..."
-          
-          # Install WordPress
-          su -s /bin/sh www-data -c "wp core install --url=${DOMAIN_CURRENT_SITE} --title='${WORDPRESS_TITLE}' --admin_user=${WORDPRESS_ADMIN_USER} --admin_password=${WORDPRESS_ADMIN_PASSWORD} --admin_email=${WORDPRESS_ADMIN_EMAIL} --skip-email"
-          
-          echo "✅ WordPress installed successfully"
-        else
-          echo "✅ WordPress already installed, skipping installation"
-        fi
-        
-        # 3. CHECK IF MULTISITE IS ENABLED
-        if ! su -s /bin/sh www-data -c "wp site list" 2>/dev/null; then
-          echo "🌐 Setting up multisite..."
-          
-          # Create .htaccess for multisite
-          su -s /bin/sh www-data -c "wp rewrite structure '/%postname%/'"
-          
-          # Enable multisite
-          su -s /bin/sh www-data -c "wp core multisite-convert --title='${WORDPRESS_TITLE}' --subdomains=${SUBDOMAIN_INSTALL}"
-          
-          echo "✅ Multisite enabled successfully"
-        else
-          echo "✅ Multisite already enabled"
-        fi
-        
-        # 4. CREATE MUST-USE PLUGIN FOR UPLOAD LIMITS
-        echo "🔧 Creating upload limits override plugin..."
-        mkdir -p /var/www/html/wp-content/mu-plugins || echo "⚠️ MU plugins dir creation failed, continuing..."
-        echo '<?php' > /var/www/html/wp-content/mu-plugins/force-upload-limits.php || echo "⚠️ MU plugin creation failed, continuing..."
-        echo '// Force Upload Limits - Must Use Plugin' >> /var/www/html/wp-content/mu-plugins/force-upload-limits.php || echo "⚠️ MU plugin creation failed, continuing..."
-        echo 'add_filter("upload_size_limit", function() { return 67108864; }, 999);' >> /var/www/html/wp-content/mu-plugins/force-upload-limits.php || echo "⚠️ MU plugin creation failed, continuing..."
-        echo 'add_filter("wp_max_upload_size", function() { return 67108864; }, 999);' >> /var/www/html/wp-content/mu-plugins/force-upload-limits.php || echo "⚠️ MU plugin creation failed, continuing..."
-        echo 'add_action("init", function() {' >> /var/www/html/wp-content/mu-plugins/force-upload-limits.php || echo "⚠️ MU plugin creation failed, continuing..."
-        echo '    @ini_set("upload_max_filesize", "64M");' >> /var/www/html/wp-content/mu-plugins/force-upload-limits.php || echo "⚠️ MU plugin creation failed, continuing..."
-        echo '    @ini_set("post_max_size", "64M");' >> /var/www/html/wp-content/mu-plugins/force-upload-limits.php || echo "⚠️ MU plugin creation failed, continuing..."
-        echo '});' >> /var/www/html/wp-content/mu-plugins/force-upload-limits.php || echo "⚠️ MU plugin creation failed, continuing..."
-        chown www-data:www-data /var/www/html/wp-content/mu-plugins/force-upload-limits.php 2>/dev/null || echo "⚠️ MU plugin ownership failed, continuing..."
-        echo "✅ Upload limits plugin created"
-        
-        # 5. INSTALL PLUGINS
-        echo "📦 Installing plugins..."
-        
-        # Essential plugins
-        if [ "${INSTALL_WORDFENCE}" = "true" ]; then
-          su -s /bin/sh www-data -c "wp plugin install wordfence --activate --network" || echo "⚠️ Wordfence installation failed, continuing..."
-        fi
-        
-        if [ "${INSTALL_YOAST_SEO}" = "true" ]; then
-          su -s /bin/sh www-data -c "wp plugin install wordpress-seo --activate --network" || echo "⚠️ Yoast SEO installation failed, continuing..."
-        fi
-        
-        if [ "${INSTALL_CONTACT_FORM_7}" = "true" ]; then
-          su -s /bin/sh www-data -c "wp plugin install contact-form-7 --activate --network" || echo "⚠️ Contact Form 7 installation failed, continuing..."
-        fi
-        
-        if [ "${INSTALL_WOOCOMMERCE}" = "true" ]; then
-          su -s /bin/sh www-data -c "wp plugin install woocommerce --activate --network" || echo "⚠️ WooCommerce installation failed, continuing..."
-        fi
-        
-        if [ "${INSTALL_ELEMENTOR}" = "true" ]; then
-          su -s /bin/sh www-data -c "wp plugin install elementor --activate --network" || echo "⚠️ Elementor installation failed, continuing..."
-        fi
-        
-        if [ "${INSTALL_GOOGLE_SITE_KIT}" = "true" ]; then
-          su -s /bin/sh www-data -c "wp plugin install google-site-kit --activate --network" || echo "⚠️ Google Site Kit installation failed, continuing..."
-        fi
-        
-        if [ "${INSTALL_UPDRAFTPLUS}" = "true" ]; then
-          su -s /bin/sh www-data -c "wp plugin install updraftplus --activate --network" || echo "⚠️ UpdraftPlus installation failed, continuing..."
-        fi
-        
-        if [ "${INSTALL_NS_CLONER}" = "true" ]; then
-          su -s /bin/sh www-data -c "wp plugin install ns-cloner-site-copier --activate --network" || echo "⚠️ NS Cloner installation failed, continuing..."
-        fi
-        
-        # Always install WP Super Cache (replaces WP Rocket)
-        su -s /bin/sh www-data -c "wp plugin install wp-super-cache --activate --network" || echo "⚠️ WP Super Cache installation failed, continuing..."
-        
-        echo "✅ Plugin installation completed"
-        
-        # 6. INSTALL THEMES
-        echo "🎨 Installing themes..."
-        
-        # Install Hello Elementor theme
-        su -s /bin/sh www-data -c "wp theme install hello-elementor --activate --network" || echo "⚠️ Hello Elementor theme installation failed, continuing..."
-        
-        # Install Twenty Twenty-Four as fallback
-        su -s /bin/sh www-data -c "wp theme install twentytwentyfour --network" || echo "⚠️ Twenty Twenty-Four theme installation failed, continuing..."
-        
-        echo "✅ Theme installation completed"
-        
-        # 7. FINAL CONFIGURATION
-        echo "⚙️ Applying final configuration..."
-        
-        # Update permalink structure
-        su -s /bin/sh www-data -c "wp rewrite structure '/%postname%/' --hard" || echo "⚠️ Permalink update failed, continuing..."
-        
-        # Flush rewrite rules
-        su -s /bin/sh www-data -c "wp rewrite flush --hard" || echo "⚠️ Rewrite flush failed, continuing..."
-        
-        # Clear any caches
-        su -s /bin/sh www-data -c "wp cache flush" 2>/dev/null || echo "⚠️ Cache flush failed, continuing..."
-        
-        echo "✅ Final configuration completed"
-        
-        # 8. VERIFICATION
-        echo "🔍 Verifying installation..."
-        
-        # Check WordPress status
-        su -s /bin/sh www-data -c "wp core version" || echo "⚠️ WordPress version check failed"
-        su -s /bin/sh www-data -c "wp core is-installed" && echo "✅ WordPress installation verified"
-        
-        # Check multisite status
-        su -s /bin/sh www-data -c "wp site list" && echo "✅ Multisite configuration verified"
-        
-        # Check upload directory
-        ls -la /var/www/html/wp-content/uploads/ && echo "✅ Upload directory structure verified"
-        
-        # Check MU plugin
-        ls -la /var/www/html/wp-content/mu-plugins/ && echo "✅ Must-Use plugins verified"
-        
-        echo "🎉 WordPress Multisite initialization completed successfully!"
-        echo "🌐 Access your site at: http://${DOMAIN_CURRENT_SITE}"
-        echo "👤 Admin login: ${WORDPRESS_ADMIN_USER} / ${WORDPRESS_ADMIN_PASSWORD}"
-        echo "📧 Admin email: ${WORDPRESS_ADMIN_EMAIL}"
-
 volumes:
   db_data:
+    driver: local
   redis_data:
+    driver: local
   wordpress_data:
+    driver: local
 
 networks:
   wordpress_network:
