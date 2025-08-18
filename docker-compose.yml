@@ -32,14 +32,14 @@ services:
         mkdir -p /mnt/wp-content/uploads/unlimited_elements_cache || echo "Unlimited Elements cache dir creation failed, continuing..."
         
         # Create a custom PHP configuration that will be mounted
-        mkdir -p /mnt/php-config || echo "PHP config dir creation failed, continuing..."
-        echo "; WordPress Upload Override" > /mnt/php-config/uploads.ini || echo "PHP config ini creation failed, continuing..."
-        echo "upload_max_filesize = 64M" >> /mnt/php-config/uploads.ini || echo "PHP config ini failed, continuing..."
-        echo "post_max_size = 64M" >> /mnt/php-config/uploads.ini || echo "PHP config ini failed, continuing..."
-        echo "memory_limit = 256M" >> /mnt/php-config/uploads.ini || echo "PHP config ini failed, continuing..."
-        echo "max_execution_time = 300" >> /mnt/php-config/uploads.ini || echo "PHP config ini failed, continuing..."
-        echo "max_input_vars = 3000" >> /mnt/php-config/uploads.ini || echo "PHP config ini failed, continuing..."
-        echo "file_uploads = On" >> /mnt/php-config/uploads.ini || echo "PHP config ini failed, continuing..."
+        mkdir -p /mnt/php-uploads-config || echo "PHP uploads config dir creation failed, continuing..."
+        echo "; WordPress Upload Override" > /mnt/php-uploads-config/uploads.ini || echo "PHP uploads ini creation failed, continuing..."
+        echo "upload_max_filesize = 64M" >> /mnt/php-uploads-config/uploads.ini || echo "PHP uploads ini failed, continuing..."
+        echo "post_max_size = 64M" >> /mnt/php-uploads-config/uploads.ini || echo "PHP uploads ini failed, continuing..."
+        echo "memory_limit = 256M" >> /mnt/php-uploads-config/uploads.ini || echo "PHP uploads ini failed, continuing..."
+        echo "max_execution_time = 300" >> /mnt/php-uploads-config/uploads.ini || echo "PHP uploads ini failed, continuing..."
+        echo "max_input_vars = 3000" >> /mnt/php-uploads-config/uploads.ini || echo "PHP uploads ini failed, continuing..."
+        echo "file_uploads = On" >> /mnt/php-uploads-config/uploads.ini || echo "PHP uploads ini failed, continuing..."
         
         # Also create .htaccess backup
         echo "# Upload size configuration via .htaccess" > /mnt/wp-content/.htaccess-upload || echo "htaccess upload config failed, continuing..."
@@ -75,7 +75,7 @@ services:
         echo "✅ Upload permissions fixed successfully"
     volumes:
       - ./wp-content:/mnt/wp-content
-      - ./php-config:/mnt/php-config
+      - ./php-uploads-config:/mnt/php-uploads-config
     networks:
       - wordpress_network
 
@@ -122,13 +122,10 @@ services:
       # PHP upload configuration via environment variables (official WordPress image)
       WORDPRESS_UPLOAD_LIMIT: ${UPLOAD_MAX_FILESIZE:-64M}
       WORDPRESS_MEMORY_LIMIT: ${MEMORY_LIMIT:-256M}
-      # PHP environment variables (these should work with the official image)
+      # Try PHP environment variables
       PHP_UPLOAD_MAX_FILESIZE: ${UPLOAD_MAX_FILESIZE:-64M}
       PHP_POST_MAX_SIZE: ${POST_MAX_SIZE:-64M}
       PHP_MEMORY_LIMIT: ${MEMORY_LIMIT:-256M}
-      # Additional PHP settings
-      PHP_MAX_EXECUTION_TIME: ${MAX_EXECUTION_TIME:-300}
-      PHP_MAX_INPUT_VARS: ${MAX_INPUT_VARS:-3000}
       WORDPRESS_CONFIG_EXTRA: |
         if (!defined('WP_REDIS_HOST')) define('WP_REDIS_HOST', 'redis');
         if (!defined('WP_REDIS_PORT')) define('WP_REDIS_PORT', 6379);
@@ -160,7 +157,6 @@ services:
       - ./wp-content:/var/www/html/wp-content
       - ./plugins:/var/www/html/wp-content/plugins
       - ./themes:/var/www/html/wp-content/themes
-      - ./php-config:/usr/local/etc/php/conf.d
     networks:
       - wordpress_network
 
