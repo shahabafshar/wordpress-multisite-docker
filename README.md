@@ -152,7 +152,7 @@ The stack includes multiple security layers:
 
 ### 🔧 Automatic Upload Directory Setup
 
-The stack includes an automatic upload permission system that runs before WordPress starts:
+The stack includes an automatic upload permission system that runs during WordPress initialization:
 
 - **Pre-creates all necessary directories** - No more "directory doesn't exist" errors
 - **Sets correct permissions** - `www-data:www-data` ownership with group-writable permissions

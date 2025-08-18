@@ -1,5 +1,21 @@
 # 🔧 Troubleshooting Guide
 
+## 🏗️ Architecture Overview
+
+The stack now uses a simplified architecture with a single initialization service:
+
+- **`db`** - MariaDB database
+- **`redis`** - Redis caching
+- **`wordpress`** - WordPress with Apache
+- **`wp-cli-init`** - Combined initialization service that handles:
+  - Upload directory creation and permissions
+  - WordPress installation
+  - Multisite setup
+  - Plugin and theme installation
+  - Upload limits configuration
+
+This consolidation eliminates the previous `permfix-uploads` service and reduces complexity while maintaining all functionality.
+
 ## Common Issues and Solutions
 
 ### 1. WordPress Multisite Not Working
@@ -81,10 +97,13 @@ docker-compose logs wp-cli-init
 ```
 
 #### Verify Database is Ready
-The WP-CLI container waits for the database. If it fails:
+The WP-CLI container waits for the database and WordPress. If it fails:
 ```bash
 # Check database container
 docker-compose logs db
+
+# Check WordPress container
+docker-compose logs wordpress
 
 # Restart the stack
 docker-compose restart
@@ -94,6 +113,9 @@ docker-compose restart
 ```bash
 # Verify WordPress files are accessible
 docker exec -it CONTAINER_NAME ls -la /var/www/html/
+
+# Check upload directory permissions
+docker exec -it CONTAINER_NAME ls -la /var/www/html/wp-content/uploads/
 ```
 
 ### 4. Port Access Issues

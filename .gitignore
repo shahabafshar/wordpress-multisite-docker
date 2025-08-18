@@ -4,8 +4,6 @@ uploads/
 plugins/
 themes/
 mu-plugins/
-php-config/
-php-uploads-config/
 
 # Environment files
 .env
