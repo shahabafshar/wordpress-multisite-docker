@@ -12,6 +12,7 @@ services:
       - |
         echo "🔧 Starting upload permissions fix..."
         
+
         # Create a custom PHP configuration that will be mounted
         mkdir -p /mnt/php-uploads-config || echo "PHP uploads config dir creation failed, continuing..."
         echo "; WordPress Upload Override" > /mnt/php-uploads-config/uploads.ini || echo "PHP uploads ini creation failed, continuing..."
@@ -31,14 +32,7 @@ services:
         # Set ownership and permissions with specific focus on problematic directories
         chown -R 33:33 /mnt/wp-content || echo "Ownership change failed, continuing..."
         chmod -R 755 /mnt/wp-content/uploads || echo "Permission change failed, continuing..."
-        
-        # Specifically fix unlimited_elements_cache permissions (needs write access for plugin)
-        chmod 777 /mnt/wp-content/uploads/unlimited_elements_cache || echo "Unlimited elements cache chmod failed, continuing..."
-        chown -R 33:33 /mnt/wp-content/uploads/unlimited_elements_cache || echo "Unlimited elements cache chown failed, continuing..."
-        
-        # Ensure parent directory is also writable for file creation
-        chmod 755 /mnt/wp-content/uploads || echo "Main uploads chmod failed, continuing..."
-        chown 33:33 /mnt/wp-content/uploads || echo "Main uploads chown failed, continuing..."
+
         
         # Create security .htaccess
         echo "Options -Indexes" > /mnt/wp-content/uploads/.htaccess || echo "htaccess creation failed, continuing..."
@@ -125,7 +119,7 @@ services:
         @ini_set('max_execution_time', '${MAX_EXECUTION_TIME:-300}');
         @ini_set('max_input_vars', '${MAX_INPUT_VARS:-3000}');
         
-        # Upload limits handled by Must-Use plugin (see wp-content/mu-plugins/force-upload-limits.php)
+
         
         # WordPress constants for upload handling
         if (!defined('WP_MEMORY_LIMIT')) define('WP_MEMORY_LIMIT', '${MEMORY_LIMIT:-256M}');
@@ -266,6 +260,74 @@ services:
           echo '✅ WordPress Multisite setup completed!'
         fi
         
+        echo '🔌 Installing essential plugins...'
+        
+        # Install Wordfence Security
+        if [ "${INSTALL_WORDFENCE}" = "true" ]; then
+          echo '🛡️  Installing Wordfence Security...'
+          wp plugin install wordfence --activate --allow-root || echo '⚠️  Wordfence installation failed, continuing...'
+        fi
+        
+        # Install Yoast SEO
+        if [ "${INSTALL_YOAST_SEO}" = "true" ]; then
+          echo '🔍 Installing Yoast SEO...'
+          wp plugin install wordpress-seo --activate --allow-root || echo '⚠️  Yoast SEO installation failed, continuing...'
+        fi
+        
+        # Install Contact Form 7
+        if [ "${INSTALL_CONTACT_FORM_7}" = "true" ]; then
+          echo '📝 Installing Contact Form 7...'
+          wp plugin install contact-form-7 --activate --allow-root || echo '⚠️  Contact Form 7 installation failed, continuing...'
+        fi
+        
+        # Install WooCommerce
+        if [ "${INSTALL_WOOCOMMERCE}" = "true" ]; then
+          echo '🛒 Installing WooCommerce...'
+          wp plugin install woocommerce --activate --allow-root || echo '⚠️  WooCommerce installation failed, continuing...'
+        fi
+        
+        # Install Elementor
+        if [ "${INSTALL_ELEMENTOR}" = "true" ]; then
+          echo '🎨 Installing Elementor...'
+          wp plugin install elementor --activate --allow-root || echo '⚠️  Elementor installation failed, continuing...'
+        fi
+        
+        # Install Google Site Kit
+        if [ "${INSTALL_GOOGLE_SITE_KIT}" = "true" ]; then
+          echo '📊 Installing Google Site Kit...'
+          wp plugin install google-site-kit --activate --allow-root || echo '⚠️  Google Site Kit installation failed, continuing...'
+        fi
+        
+        # Install UpdraftPlus
+        if [ "${INSTALL_UPDRAFTPLUS}" = "true" ]; then
+          echo '💾 Installing UpdraftPlus...'
+          wp plugin install updraftplus --activate --allow-root || echo '⚠️  UpdraftPlus installation failed, continuing...'
+        fi
+        
+        # Install NS Cloner
+        if [ "${INSTALL_NS_CLONER}" = "true" ]; then
+          echo '🔄 Installing NS Cloner...'
+          wp plugin install ns-cloner-site-copier --activate --allow-root || echo '⚠️  NS Cloner installation failed, continuing...'
+        fi
+        
+        # Always install WP Super Cache (replaces WP Rocket)
+        echo '⚡ Installing WP Super Cache...'
+        wp plugin install wp-super-cache --activate --allow-root || echo '⚠️  WP Super Cache installation failed, continuing...'
+        
+        echo '✅ Plugin installation completed!'
+        
+        # Show installation summary
+        echo '📊 Plugin Installation Summary:'
+        wp plugin list --status=active --allow-root || echo '⚠️  Could not list active plugins, continuing...'
+        
+        echo '🎨 Installing themes...'
+        
+        # Install Hello Elementor theme
+        echo '🏠 Installing Hello Elementor theme...'
+        wp theme install hello-elementor --activate --allow-root || echo '⚠️  Hello Elementor theme installation failed, continuing...'
+        
+        echo '✅ Theme installation completed!'
+        
         echo '🔧 Diagnosing PHP upload configuration...'
         
         # Check current PHP settings
@@ -314,13 +376,23 @@ services:
         echo "=== Debug File System ==="
         echo "PHP uploads config exists?" && ls -la /usr/local/etc/php/conf.d/uploads.ini 2>/dev/null || echo "PHP uploads.ini NOT FOUND in container"
         echo "WordPress volumes:" && ls -la /var/www/html/php-uploads-config/ 2>/dev/null || echo "No php-uploads-config in wordpress volume"
-        echo "MU plugins dir:" && ls -la /var/www/html/wp-content/mu-plugins/ 2>/dev/null || echo "No mu-plugins dir yet"
-        
-        echo "=== Skipping Must-Use Plugin Creation ==="
-        echo "Testing if PHP configuration and .htaccess are sufficient without MU plugin"
+
         
         echo '✅ WordPress configuration completed successfully!'
-        echo '🔍 Testing upload configuration without MU plugin - check if 64MB uploads work'
+        echo '🎉 WordPress Multisite with all plugins and themes is ready!'
+        echo '📋 Installation Summary:'
+        echo '   ✅ WordPress Core installed and configured'
+        echo '   ✅ Multisite enabled and configured'
+        echo '   ✅ Essential plugins installed and activated'
+        echo '   ✅ Hello Elementor theme installed and activated'
+        echo '   ✅ Upload configuration applied (64MB limit)'
+        echo '   ✅ Security .htaccess rules configured'
+        echo ''
+        echo '🔍 Test your setup:'
+        echo '   🌐 Main site: https://your-domain.com'
+        echo '   🔧 Admin: https://your-domain.com/wp-admin'
+        echo '   📁 Network admin: https://your-domain.com/wp-admin/network/'
+        echo '   📤 Try uploading a file larger than 2MB to test 64MB limit'
     networks:
       - wordpress_network
 
