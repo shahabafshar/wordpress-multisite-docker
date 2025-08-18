@@ -8,18 +8,19 @@ services:
     user: "0:0"
     depends_on:
       db:
-        condition: service_healthy
+        condition: service_started
       wordpress:
-        condition: service_healthy
-    restart: "on-failure:3"
+        condition: service_started
     environment:
       WORDPRESS_DB_HOST: ${WORDPRESS_DB_HOST}
       WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME}
+      WORDPRESS_DB_USER: root
+      WORDPRESS_DB_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      WORDPRESS_TITLE: ${WORDPRESS_TITLE:-WordPress Multisite}
       WORDPRESS_ADMIN_USER: ${WORDPRESS_ADMIN_USER:-admin}
       WORDPRESS_ADMIN_PASSWORD: ${WORDPRESS_ADMIN_PASSWORD:-admin123}
       WORDPRESS_ADMIN_EMAIL: ${WORDPRESS_ADMIN_EMAIL:-admin@example.com}
-      WORDPRESS_TITLE: ${WORDPRESS_TITLE:-WordPress Multisite}
-      DOMAIN_CURRENT_SITE: ${DOMAIN_CURRENT_SITE:-localhost:${EXTERNAL_PORT:-8080}}
+      DOMAIN_CURRENT_SITE: ${DOMAIN_CURRENT_SITE:-localhost:8080}
       SUBDOMAIN_INSTALL: ${SUBDOMAIN_INSTALL:-false}
       INSTALL_WORDFENCE: ${INSTALL_WORDFENCE:-true}
       INSTALL_YOAST_SEO: ${INSTALL_YOAST_SEO:-true}
@@ -44,46 +45,9 @@ services:
         
         echo "🚀 Starting WordPress initialization..."
         
-        # Wait for database to be ready with retry logic
-        echo "⏳ Waiting for database to be ready..."
-        for i in {1..60}; do
-          if su -s /bin/sh www-data -c "wp db check --allow-root" 2>/dev/null; then
-            echo "✅ Database connection established"
-            break
-          fi
-          echo "⏳ Database not ready, attempt $i/60..."
-          sleep 10
-        done
-        
-        # Final check - if database still not ready, try a few more times
-        if ! su -s /bin/sh www-data -c "wp db check --allow-root" 2>/dev/null; then
-          echo "⚠️ Database connection still not ready, trying a few more times..."
-          for i in {1..10}; do
-            sleep 15
-            if su -s /bin/sh www-data -c "wp db check --allow-root" 2>/dev/null; then
-              echo "✅ Database connection established on final attempt"
-              break
-            fi
-            echo "⏳ Final attempt $i/10..."
-          done
-        fi
-        
-        # If still not ready, continue anyway (might be a timing issue)
-        if ! su -s /bin/sh www-data -c "wp db check --allow-root" 2>/dev/null; then
-          echo "⚠️ Database connection not confirmed, but continuing anyway..."
-        fi
-        
         # Wait for WordPress to be ready
         echo "⏳ Waiting for WordPress to be ready..."
-        sleep 10
-        
-        # Debug: Check what's running
-        echo "🔍 Debug: Checking running processes..."
-        ps aux | head -10 || echo "ps command failed"
-        echo "🔍 Debug: Checking network connections..."
-        netstat -tlnp | head -10 || echo "netstat command failed"
-        echo "🔍 Debug: Checking WordPress files..."
-        ls -la /var/www/html/ | head -10 || echo "ls command failed"
+        sleep 15
         
         # Step 1: Fix upload directory permissions (consolidated from permfix-uploads)
         echo "🔧 Setting up upload directory permissions..."
@@ -203,27 +167,10 @@ services:
         # Always install WP Super Cache (replaces WP Rocket)
         echo "⚡ Installing WP Super Cache..."
         
-        # Ensure permissions are correct before plugin installation
-        echo "🔧 Ensuring permissions before WP Super Cache installation..."
-        chmod -R 775 /var/www/html/wp-content/uploads || echo "⚠️ Uploads chmod failed, continuing..."
-        chown -R www-data:www-data /var/www/html/wp-content/uploads || echo "⚠️ Uploads ownership failed, continuing..."
-        
         su -s /bin/sh www-data -c "wp plugin install wp-super-cache --activate --allow-root" || echo "⚠️ WP Super Cache installation failed, continuing..."
         
         # Step 3.5: Network activate plugins for multisite
         echo "🌐 Network activating plugins for multisite..."
-        
-        # Fix permissions before network activation to prevent plugin errors
-        echo "🔧 Ensuring plugin directories are writable..."
-        chmod -R 775 /var/www/html/wp-content/uploads || echo "⚠️ Uploads chmod failed, continuing..."
-        chown -R www-data:www-data /var/www/html/wp-content/uploads || echo "⚠️ Uploads ownership failed, continuing..."
-        
-        # Specifically fix unlimited_elements_cache before plugin operations
-        if [ -d "/var/www/html/wp-content/uploads/unlimited_elements_cache" ]; then
-          echo "🔧 Pre-fixing unlimited_elements_cache permissions..."
-          chmod -R 775 /var/www/html/wp-content/uploads/unlimited_elements_cache || echo "⚠️ Cache pre-fix failed, continuing..."
-          chown -R www-data:www-data /var/www/html/wp-content/uploads/unlimited_elements_cache || echo "⚠️ Cache pre-ownership failed, continuing..."
-        fi
         
         su -s /bin/sh www-data -c "wp plugin activate wordfence --network --allow-root" 2>/dev/null || echo "⚠️ Wordfence network activation failed, continuing..."
         su -s /bin/sh www-data -c "wp plugin activate wordpress-seo --network --allow-root" 2>/dev/null || echo "⚠️ Yoast SEO network activation failed, continuing..."
@@ -249,21 +196,7 @@ services:
         # Step 4.5: Network activate themes for multisite
         echo "🌐 Network activating themes for multisite..."
         
-        # Fix permissions before theme activation
-        echo "🔧 Ensuring theme directories are writable..."
-        chmod -R 775 /var/www/html/wp-content/themes || echo "⚠️ Themes chmod failed, continuing..."
-        chown -R www-data:www-data /var/www/html/wp-content/themes || echo "⚠️ Themes ownership failed, continuing..."
-        
-        # Network activate themes with better error handling
-        echo "🌐 Activating Hello Elementor theme network-wide..."
-        su -s /bin/sh www-data -c "wp theme activate hello-elementor --network --allow-root" 2>/dev/null && echo "✅ Hello Elementor network activated" || echo "⚠️ Hello Elementor network activation failed (may already be active), continuing..."
-        
-        # Check if theme is network active
-        if su -s /bin/sh www-data -c "wp theme list --status=active --network --allow-root" 2>/dev/null | grep -q "hello-elementor"; then
-          echo "✅ Hello Elementor is network active"
-        else
-          echo "⚠️ Hello Elementor not network active, but continuing..."
-        fi
+        su -s /bin/sh www-data -c "wp theme activate hello-elementor --network --allow-root" 2>/dev/null || echo "⚠️ Hello Elementor network activation failed, continuing..."
         
         # Step 5: Create Must-Use plugin for upload limits
         echo "🔧 Creating Must-Use plugin for upload limits..."
@@ -325,7 +258,7 @@ services:
   # ── DATABASE ──
   db:
     image: mariadb:${MARIADB_VERSION:-11.5}
-    restart: "on-failure:3"
+    restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${WORDPRESS_DB_NAME}
@@ -333,39 +266,27 @@ services:
       - db_data:/var/lib/mysql
     networks:
       - wordpress_network
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
-      timeout: 30s
-      retries: 15
-      start_period: 60s
-      interval: 10s
 
   # ── REDIS ──
   redis:
     image: redis:${REDIS_VERSION:-alpine}
-    restart: "on-failure:3"
+    restart: unless-stopped
     volumes:
       - redis_data:/data
     networks:
       - wordpress_network
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      timeout: 15s
-      retries: 10
-      start_period: 30s
-      interval: 10s
 
   # ── WORDPRESS ──
   wordpress:
     image: wordpress:latest
-    restart: "on-failure:3"
+    restart: unless-stopped
     depends_on:
       db:
-        condition: service_healthy
+        condition: service_started
       redis:
-        condition: service_healthy
+        condition: service_started
     ports:
-      - "${EXTERNAL_PORT:-8080}:80"
+      - "8080:80"
     environment:
       WORDPRESS_DB_HOST: ${WORDPRESS_DB_HOST}
       WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME}
@@ -411,12 +332,6 @@ services:
       - ./themes:/var/www/html/wp-content/themes
     networks:
       - wordpress_network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/wp-admin/install.php"]
-      timeout: 20s
-      retries: 10
-      start_period: 60s
-      interval: 15s
 
 volumes:
   db_data:
