@@ -31,13 +31,21 @@ services:
         mkdir -p /mnt/wp-content/uploads/unlimited_elements || echo "Unlimited Elements dir creation failed, continuing..."
         mkdir -p /mnt/wp-content/uploads/unlimited_elements_cache || echo "Unlimited Elements cache dir creation failed, continuing..."
         
-        # Create WordPress .htaccess with PHP upload settings (this works better)
-        echo "# Upload size configuration via .htaccess" >> /mnt/wp-content/.htaccess-upload || echo "htaccess upload config failed, continuing..."
+        # Create a custom PHP configuration that will be mounted
+        mkdir -p /mnt/php-uploads-config || echo "PHP uploads config dir creation failed, continuing..."
+        echo "; WordPress Upload Override" > /mnt/php-uploads-config/uploads.ini || echo "PHP uploads ini creation failed, continuing..."
+        echo "upload_max_filesize = 64M" >> /mnt/php-uploads-config/uploads.ini || echo "PHP uploads ini failed, continuing..."
+        echo "post_max_size = 64M" >> /mnt/php-uploads-config/uploads.ini || echo "PHP uploads ini failed, continuing..."
+        echo "memory_limit = 256M" >> /mnt/php-uploads-config/uploads.ini || echo "PHP uploads ini failed, continuing..."
+        echo "max_execution_time = 300" >> /mnt/php-uploads-config/uploads.ini || echo "PHP uploads ini failed, continuing..."
+        echo "max_input_vars = 3000" >> /mnt/php-uploads-config/uploads.ini || echo "PHP uploads ini failed, continuing..."
+        echo "file_uploads = On" >> /mnt/php-uploads-config/uploads.ini || echo "PHP uploads ini failed, continuing..."
+        
+        # Also create .htaccess backup
+        echo "# Upload size configuration via .htaccess" > /mnt/wp-content/.htaccess-upload || echo "htaccess upload config failed, continuing..."
         echo "php_value upload_max_filesize 64M" >> /mnt/wp-content/.htaccess-upload || echo "htaccess upload config failed, continuing..."
         echo "php_value post_max_size 64M" >> /mnt/wp-content/.htaccess-upload || echo "htaccess upload config failed, continuing..."
         echo "php_value memory_limit 256M" >> /mnt/wp-content/.htaccess-upload || echo "htaccess upload config failed, continuing..."
-        echo "php_value max_execution_time 300" >> /mnt/wp-content/.htaccess-upload || echo "htaccess upload config failed, continuing..."
-        echo "php_value max_input_vars 3000" >> /mnt/wp-content/.htaccess-upload || echo "htaccess upload config failed, continuing..."
         
         # Set ownership and permissions
         chown -R 33:33 /mnt/wp-content || echo "Ownership change failed, continuing..."
@@ -58,7 +66,7 @@ services:
         echo "✅ Upload permissions fixed successfully"
     volumes:
       - ./wp-content:/mnt/wp-content
-      - ./php-config:/mnt/php-config
+      - ./php-uploads-config:/mnt/php-uploads-config
     networks:
       - wordpress_network
 
@@ -101,9 +109,13 @@ services:
       WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME}
       WORDPRESS_DB_USER: root
       WORDPRESS_DB_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      # PHP upload configuration via environment variables
-      UPLOAD_LIMIT: ${UPLOAD_MAX_FILESIZE:-64M}
-      PHP_INI_SCAN_DIR: /usr/local/etc/php/conf.d:/usr/local/etc/php/conf.d-custom
+      # PHP upload configuration via environment variables (official WordPress image)
+      WORDPRESS_UPLOAD_LIMIT: ${UPLOAD_MAX_FILESIZE:-64M}
+      WORDPRESS_MEMORY_LIMIT: ${MEMORY_LIMIT:-256M}
+      # Try PHP environment variables
+      PHP_UPLOAD_MAX_FILESIZE: ${UPLOAD_MAX_FILESIZE:-64M}
+      PHP_POST_MAX_SIZE: ${POST_MAX_SIZE:-64M}
+      PHP_MEMORY_LIMIT: ${MEMORY_LIMIT:-256M}
       WORDPRESS_CONFIG_EXTRA: |
         if (!defined('WP_REDIS_HOST')) define('WP_REDIS_HOST', 'redis');
         if (!defined('WP_REDIS_PORT')) define('WP_REDIS_PORT', 6379);
@@ -137,6 +149,7 @@ services:
       - ./wp-content:/var/www/html/wp-content
       - ./plugins:/var/www/html/wp-content/plugins
       - ./themes:/var/www/html/wp-content/themes
+      - ./php-uploads-config/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini:ro
     networks:
       - wordpress_network
 
@@ -302,7 +315,7 @@ services:
         
         echo "=== Force Restart PHP-FPM ==="
         # Try to restart PHP-FPM to pick up any configuration changes
-        docker exec \$(docker ps -q -f name=.*wordpress.*) killall -USR2 php-fpm 2>/dev/null || echo "PHP-FPM restart signal failed"
+        echo "Skipping PHP-FPM restart (requires different approach)"
         
         echo "=== Final WordPress Upload Test ==="
         sleep 3  # Wait for potential restart
