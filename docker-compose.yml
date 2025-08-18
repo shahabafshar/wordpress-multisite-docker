@@ -29,17 +29,15 @@ services:
         # Create common plugin directories
         mkdir -p /mnt/wp-content/uploads/elementor || echo "Elementor dir creation failed, continuing..."
         mkdir -p /mnt/wp-content/uploads/unlimited_elements || echo "Unlimited Elements dir creation failed, continuing..."
+        mkdir -p /mnt/wp-content/uploads/unlimited_elements_cache || echo "Unlimited Elements cache dir creation failed, continuing..."
         
-        # Create custom PHP configuration for uploads
-        mkdir -p /mnt/php-config || echo "PHP config dir creation failed, continuing..."
-        echo "; Custom PHP Upload Configuration" > /mnt/php-config/uploads.ini || echo "PHP ini creation failed, continuing..."
-        echo "upload_max_filesize = 64M" >> /mnt/php-config/uploads.ini || echo "PHP ini config failed, continuing..."
-        echo "post_max_size = 64M" >> /mnt/php-config/uploads.ini || echo "PHP ini config failed, continuing..."
-        echo "memory_limit = 256M" >> /mnt/php-config/uploads.ini || echo "PHP ini config failed, continuing..."
-        echo "max_execution_time = 300" >> /mnt/php-config/uploads.ini || echo "PHP ini config failed, continuing..."
-        echo "max_input_vars = 3000" >> /mnt/php-config/uploads.ini || echo "PHP ini config failed, continuing..."
-        echo "max_input_time = 300" >> /mnt/php-config/uploads.ini || echo "PHP ini config failed, continuing..."
-        echo "file_uploads = On" >> /mnt/php-config/uploads.ini || echo "PHP ini config failed, continuing..."
+        # Create WordPress .htaccess with PHP upload settings (this works better)
+        echo "# Upload size configuration via .htaccess" >> /mnt/wp-content/.htaccess-upload || echo "htaccess upload config failed, continuing..."
+        echo "php_value upload_max_filesize 64M" >> /mnt/wp-content/.htaccess-upload || echo "htaccess upload config failed, continuing..."
+        echo "php_value post_max_size 64M" >> /mnt/wp-content/.htaccess-upload || echo "htaccess upload config failed, continuing..."
+        echo "php_value memory_limit 256M" >> /mnt/wp-content/.htaccess-upload || echo "htaccess upload config failed, continuing..."
+        echo "php_value max_execution_time 300" >> /mnt/wp-content/.htaccess-upload || echo "htaccess upload config failed, continuing..."
+        echo "php_value max_input_vars 3000" >> /mnt/wp-content/.htaccess-upload || echo "htaccess upload config failed, continuing..."
         
         # Set ownership and permissions
         chown -R 33:33 /mnt/wp-content || echo "Ownership change failed, continuing..."
@@ -104,11 +102,8 @@ services:
       WORDPRESS_DB_USER: root
       WORDPRESS_DB_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       # PHP upload configuration via environment variables
-      PHP_UPLOAD_MAX_FILESIZE: ${UPLOAD_MAX_FILESIZE:-64M}
-      PHP_POST_MAX_SIZE: ${POST_MAX_SIZE:-64M}
-      PHP_MEMORY_LIMIT: ${MEMORY_LIMIT:-256M}
-      PHP_MAX_EXECUTION_TIME: ${MAX_EXECUTION_TIME:-300}
-      PHP_MAX_INPUT_VARS: ${MAX_INPUT_VARS:-3000}
+      UPLOAD_LIMIT: ${UPLOAD_MAX_FILESIZE:-64M}
+      PHP_INI_SCAN_DIR: /usr/local/etc/php/conf.d:/usr/local/etc/php/conf.d-custom
       WORDPRESS_CONFIG_EXTRA: |
         if (!defined('WP_REDIS_HOST')) define('WP_REDIS_HOST', 'redis');
         if (!defined('WP_REDIS_PORT')) define('WP_REDIS_PORT', 6379);
@@ -138,7 +133,6 @@ services:
       - ./wp-content:/var/www/html/wp-content
       - ./plugins:/var/www/html/wp-content/plugins
       - ./themes:/var/www/html/wp-content/themes
-      - ./php-config/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini:ro
     networks:
       - wordpress_network
 
@@ -276,6 +270,17 @@ services:
         
         echo "=== WordPress Upload Settings ==="
         su -s /bin/sh www-data -c "wp eval 'echo \"WordPress max upload: \" . wp_max_upload_size() / 1024 / 1024 . \"MB\\n\";'" || echo '⚠️  WordPress upload check failed, continuing...'
+        
+        echo "=== Applying PHP Upload Configuration to .htaccess ==="
+        # Append upload configuration to main .htaccess if it exists
+        if [ -f /var/www/html/wp-content/.htaccess-upload ]; then
+          echo "" >> /var/www/html/.htaccess || echo "htaccess append failed, continuing..."
+          cat /var/www/html/wp-content/.htaccess-upload >> /var/www/html/.htaccess || echo "htaccess upload config append failed, continuing..."
+          chown www-data:www-data /var/www/html/.htaccess 2>/dev/null || echo "htaccess ownership failed, continuing..."
+          echo "Upload config added to .htaccess"
+        else
+          echo "No upload config file found"
+        fi
         
         echo "=== File System Check ==="
         echo "PHP config file exists:" && ls -la /usr/local/etc/php/conf.d/uploads.ini 2>/dev/null || echo "PHP config file NOT found"
