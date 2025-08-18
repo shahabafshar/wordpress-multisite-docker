@@ -131,7 +131,7 @@ The installation process includes comprehensive error handling:
 - **🔧 Upload directory setup** - Automatically creates and sets permissions for upload directories
 - **✅ Smart installation** - Skips already installed plugins/themes to avoid warnings
 
-Check the `wp-cli-init` container logs to see any warnings or failed installations.
+Check the `wp-init` container logs to see any warnings or failed installations.
 
 ### 🔧 Upload Directory Setup
 The installation process automatically creates and secures upload directories:
