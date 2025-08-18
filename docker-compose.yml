@@ -24,7 +24,7 @@ services:
 
   # ── WORDPRESS ──
   wordpress:
-    image: wordpress:latest
+    image: wordpress:${WORDPRESS_VERSION:-latest}
     restart: unless-stopped
     depends_on:
       db:
@@ -32,11 +32,11 @@ services:
       redis:
         condition: service_started
     ports:
-      - "8080:80"
+      - "${WORDPRESS_LOCAL_PORT:-8080}:80"
     environment:
       WORDPRESS_DB_HOST: ${WORDPRESS_DB_HOST}
       WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME}
-      WORDPRESS_DB_USER: root
+      WORDPRESS_DB_USER: ${WORDPRESS_DB_USER:-root}
       WORDPRESS_DB_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       # PHP upload configuration via environment variables (official WordPress image)
       WORDPRESS_UPLOAD_LIMIT: ${UPLOAD_MAX_FILESIZE:-64M}
@@ -81,7 +81,7 @@ services:
 
   # ── WP-CLI INIT ──
   wp-cli-init:
-    image: wordpress:cli
+    image: wordpress:cli:${WP_CLI_VERSION:-latest}
     restart: "no"
     user: "0:0"
     depends_on:
@@ -92,13 +92,13 @@ services:
     environment:
       WORDPRESS_DB_HOST: ${WORDPRESS_DB_HOST}
       WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME}
-      WORDPRESS_DB_USER: root
+      WORDPRESS_DB_USER: ${WORDPRESS_DB_USER:-root}
       WORDPRESS_DB_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       WORDPRESS_TITLE: ${WORDPRESS_TITLE:-WordPress Multisite}
       WORDPRESS_ADMIN_USER: ${WORDPRESS_ADMIN_USER:-admin}
       WORDPRESS_ADMIN_PASSWORD: ${WORDPRESS_ADMIN_PASSWORD:-admin123}
       WORDPRESS_ADMIN_EMAIL: ${WORDPRESS_ADMIN_EMAIL:-admin@example.com}
-      DOMAIN_CURRENT_SITE: ${DOMAIN_CURRENT_SITE:-localhost:8080}
+      DOMAIN_CURRENT_SITE: ${DOMAIN_CURRENT_SITE:-localhost:${WORDPRESS_LOCAL_PORT:-8080}}
       SUBDOMAIN_INSTALL: ${SUBDOMAIN_INSTALL:-false}
       INSTALL_WORDFENCE: ${INSTALL_WORDFENCE:-true}
       INSTALL_YOAST_SEO: ${INSTALL_YOAST_SEO:-true}
@@ -146,18 +146,18 @@ services:
         # Create a custom PHP configuration that will be mounted
         mkdir -p /var/www/html/php-uploads-config || echo "PHP uploads config dir creation failed, continuing..."
         echo "; WordPress Upload Override" > /var/www/html/php-uploads-config/uploads.ini || echo "PHP uploads ini creation failed, continuing..."
-        echo "upload_max_filesize = 64M" >> /var/www/html/php-uploads-config/uploads.ini || echo "PHP uploads ini failed, continuing..."
-        echo "post_max_size = 64M" >> /var/www/html/php-uploads-config/uploads.ini || echo "PHP uploads ini failed, continuing..."
-        echo "memory_limit = 256M" >> /var/www/html/php-uploads-config/uploads.ini || echo "PHP uploads ini failed, continuing..."
-        echo "max_execution_time = 300" >> /var/www/html/php-uploads-config/uploads.ini || echo "PHP uploads ini failed, continuing..."
-        echo "max_input_vars = 3000" >> /var/www/html/php-uploads-config/uploads.ini || echo "PHP uploads ini failed, continuing..."
+        echo "upload_max_filesize = ${UPLOAD_MAX_FILESIZE:-64M}" >> /var/www/html/php-uploads-config/uploads.ini || echo "PHP uploads ini failed, continuing..."
+        echo "post_max_size = ${POST_MAX_SIZE:-64M}" >> /var/www/html/php-uploads-config/uploads.ini || echo "PHP uploads ini failed, continuing..."
+        echo "memory_limit = ${MEMORY_LIMIT:-256M}" >> /var/www/html/php-uploads-config/uploads.ini || echo "PHP uploads ini failed, continuing..."
+        echo "max_execution_time = ${MAX_EXECUTION_TIME:-300}" >> /var/www/html/php-uploads-config/uploads.ini || echo "PHP uploads ini failed, continuing..."
+        echo "max_input_vars = ${MAX_INPUT_VARS:-3000}" >> /var/www/html/php-uploads-config/uploads.ini || echo "PHP uploads ini failed, continuing..."
         echo "file_uploads = On" >> /var/www/html/php-uploads-config/uploads.ini || echo "PHP uploads ini failed, continuing..."
         
         # Also create .htaccess backup
         echo "# Upload size configuration via .htaccess" > /var/www/html/wp-content/.htaccess-upload || echo "htaccess upload config failed, continuing..."
-        echo "php_value upload_max_filesize 64M" >> /var/www/html/wp-content/.htaccess-upload || echo "htaccess upload config failed, continuing..."
-        echo "php_value post_max_size 64M" >> /var/www/html/wp-content/.htaccess-upload || echo "htaccess upload config failed, continuing..."
-        echo "php_value memory_limit 256M" >> /var/www/html/wp-content/.htaccess-upload || echo "htaccess upload config failed, continuing..."
+        echo "php_value upload_max_filesize ${UPLOAD_MAX_FILESIZE:-64M}" >> /var/www/html/wp-content/.htaccess-upload || echo "htaccess upload config failed, continuing..."
+        echo "php_value post_max_size ${POST_MAX_SIZE:-64M}" >> /var/www/html/wp-content/.htaccess-upload || echo "htaccess upload config failed, continuing..."
+        echo "php_value memory_limit ${MEMORY_LIMIT:-256M}" >> /var/www/html/wp-content/.htaccess-upload || echo "htaccess upload config failed, continuing..."
         
         # Set ownership and permissions with specific focus on problematic directories
         chown -R 33:33 /var/www/html/wp-content || echo "Ownership change failed, continuing..."
@@ -319,9 +319,9 @@ services:
         mkdir -p /var/www/html/wp-content/mu-plugins || echo "MU plugins dir creation failed, continuing..."
         echo '<?php' > /var/www/html/wp-content/mu-plugins/force-upload-limits.php || echo 'MU plugin creation failed, continuing...'
         echo '// Force Upload Limits - Must Use Plugin' >> /var/www/html/wp-content/mu-plugins/force-upload-limits.php || echo 'MU plugin creation failed, continuing...'
-        echo 'add_filter("upload_size_limit", function() { return 67108864; }, 999);' >> /var/www/html/wp-content/mu-plugins/force-upload-limits.php || echo 'MU plugin creation failed, continuing...'
-        echo 'add_filter("wp_max_upload_size", function() { return 67108864; }, 999);' >> /var/www/html/wp-content/mu-plugins/force-upload-limits.php || echo 'MU plugin creation failed, continuing...'
-        echo 'add_action("init", function() { @ini_set("upload_max_filesize", "64M"); @ini_set("post_max_size", "64M"); });' >> /var/www/html/wp-content/mu-plugins/force-upload-limits.php || echo 'MU plugin creation failed, continuing...'
+        echo 'add_filter("upload_size_limit", function() { return '$((${UPLOAD_MAX_FILESIZE:-64M} * 1024 * 1024))'; }, 999);' >> /var/www/html/wp-content/mu-plugins/force-upload-limits.php || echo 'MU plugin creation failed, continuing...'
+        echo 'add_filter("wp_max_upload_size", function() { return '$((${UPLOAD_MAX_FILESIZE:-64M} * 1024 * 1024))'; }, 999);' >> /var/www/html/wp-content/mu-plugins/force-upload-limits.php || echo 'MU plugin creation failed, continuing...'
+        echo 'add_action("init", function() { @ini_set("upload_max_filesize", "${UPLOAD_MAX_FILESIZE:-64M}"); @ini_set("post_max_size", "${POST_MAX_SIZE:-64M}"); });' >> /var/www/html/wp-content/mu-plugins/force-upload-limits.php || echo 'MU plugin creation failed, continuing...'
         chown www-data:www-data /var/www/html/wp-content/mu-plugins/force-upload-limits.php 2>/dev/null || echo 'MU plugin ownership failed, continuing...'
         echo "MU plugin created:" && cat /var/www/html/wp-content/mu-plugins/force-upload-limits.php 2>/dev/null || echo "Failed to read MU plugin"
         
