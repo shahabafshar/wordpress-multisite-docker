@@ -31,21 +31,9 @@ services:
         mkdir -p /mnt/wp-content/uploads/unlimited_elements || echo "Unlimited Elements dir creation failed, continuing..."
         mkdir -p /mnt/wp-content/uploads/unlimited_elements_cache || echo "Unlimited Elements cache dir creation failed, continuing..."
         
-        # Create a custom PHP configuration that will be mounted
-        mkdir -p /mnt/php-uploads-config || echo "PHP uploads config dir creation failed, continuing..."
-        echo "; WordPress Upload Override" > /mnt/php-uploads-config/uploads.ini || echo "PHP uploads ini creation failed, continuing..."
-        echo "upload_max_filesize = 64M" >> /mnt/php-uploads-config/uploads.ini || echo "PHP uploads ini failed, continuing..."
-        echo "post_max_size = 64M" >> /mnt/php-uploads-config/uploads.ini || echo "PHP uploads ini failed, continuing..."
-        echo "memory_limit = 256M" >> /mnt/php-uploads-config/uploads.ini || echo "PHP uploads ini failed, continuing..."
-        echo "max_execution_time = 300" >> /mnt/php-uploads-config/uploads.ini || echo "PHP uploads ini failed, continuing..."
-        echo "max_input_vars = 3000" >> /mnt/php-uploads-config/uploads.ini || echo "PHP uploads ini failed, continuing..."
-        echo "file_uploads = On" >> /mnt/php-uploads-config/uploads.ini || echo "PHP uploads ini failed, continuing..."
+
         
-        # Also create .htaccess backup
-        echo "# Upload size configuration via .htaccess" > /mnt/wp-content/.htaccess-upload || echo "htaccess upload config failed, continuing..."
-        echo "php_value upload_max_filesize 64M" >> /mnt/wp-content/.htaccess-upload || echo "htaccess upload config failed, continuing..."
-        echo "php_value post_max_size 64M" >> /mnt/wp-content/.htaccess-upload || echo "htaccess upload config failed, continuing..."
-        echo "php_value memory_limit 256M" >> /mnt/wp-content/.htaccess-upload || echo "htaccess upload config failed, continuing..."
+
         
         # Set ownership and permissions with specific focus on problematic directories
         chown -R 33:33 /mnt/wp-content || echo "Ownership change failed, continuing..."
@@ -73,9 +61,8 @@ services:
         chown 33:33 /mnt/wp-content/uploads/.htaccess || echo "htaccess ownership failed, continuing..."
         
         echo "✅ Upload permissions fixed successfully"
-    volumes:
-      - ./wp-content:/mnt/wp-content
-      - ./php-uploads-config:/mnt/php-uploads-config
+          volumes:
+        - ./wp-content:/mnt/wp-content
     networks:
       - wordpress_network
 
@@ -285,58 +272,12 @@ services:
           echo '✅ WordPress Multisite setup completed!'
         fi
         
-        echo '🔧 Diagnosing PHP upload configuration...'
+        echo '🔧 Testing upload configuration...'
         
-        # Check current PHP settings
-        echo "=== PHP Configuration Diagnosis ==="
-        php -i | grep -E 'upload_max_filesize|post_max_size|memory_limit|max_execution_time|max_input_vars' || echo '⚠️  PHP info failed, continuing...'
+        # Simple upload size check
+        wp eval 'echo "WordPress max upload: " . size_format(wp_max_upload_size()) . "\n";' || echo '⚠️  WordPress upload check failed, continuing...'
         
-        echo "=== Loaded PHP INI Files ==="
-        php --ini || echo '⚠️  PHP ini check failed, continuing...'
-        
-        echo "=== WordPress Upload Settings ==="
-        wp eval 'echo "WordPress max upload: " . wp_max_upload_size() / 1024 / 1024 . "MB\n";' || echo '⚠️  WordPress upload check failed, continuing...'
-        
-        echo "=== Applying PHP Upload Configuration to .htaccess ==="
-        # Check if upload config already added to prevent duplicates
-        if ! grep -q "Upload size configuration via .htaccess" /var/www/html/.htaccess 2>/dev/null; then
-          if [ -f /var/www/html/wp-content/.htaccess-upload ]; then
-            echo "" >> /var/www/html/.htaccess || echo "htaccess append failed, continuing..."
-            cat /var/www/html/wp-content/.htaccess-upload >> /var/www/html/.htaccess || echo "htaccess upload config append failed, continuing..."
-
-            echo "Upload config added to .htaccess"
-          else
-            echo "No upload config file found"
-          fi
-        else
-          echo "Upload config already exists in .htaccess"
-        fi
-        
-        echo "=== File System Check ==="
-        echo ".htaccess contents:" && tail -20 /var/www/html/.htaccess 2>/dev/null || echo "Cannot read .htaccess"
-        echo ""
-        echo "Upload config file:" && cat /var/www/html/wp-content/.htaccess-upload 2>/dev/null || echo "Upload config not found"
-        echo ""
-        echo "Testing PHP settings after .htaccess:"
-        
-        echo "=== WordPress Upload Configuration ==="
-        echo "Testing if PHP configuration and .htaccess are sufficient for 64MB uploads"
-        
-        echo "=== Force Restart PHP-FPM ==="
-        # Try to restart PHP-FPM to pick up any configuration changes
-        echo "Skipping PHP-FPM restart (requires different approach)"
-        
-        echo "=== Final WordPress Upload Test ==="
-        sleep 3  # Wait for potential restart
-        wp eval 'echo "Final WordPress max upload: " . size_format(wp_max_upload_size()) . "\n";' || echo '⚠️  Final WordPress upload check failed, continuing...'
-        
-        echo "=== Debug File System ==="
-        echo "PHP uploads config exists?" && ls -la /usr/local/etc/php/conf.d/uploads.ini 2>/dev/null || echo "PHP uploads.ini NOT FOUND in container"
-        echo "WordPress volumes:" && ls -la /var/www/html/php-uploads-config/ 2>/dev/null || echo "No php-uploads-config in wordpress volume"
-        echo "MU plugins dir:" && ls -la /var/www/html/wp-content/mu-plugins/ 2>/dev/null || echo "No mu-plugins dir yet"
-        
-        echo "=== Skipping Must-Use Plugin Creation ==="
-        echo "Testing if PHP configuration and .htaccess are sufficient without MU plugin"
+        echo "✅ Upload configuration test completed"
         
         echo '✅ WordPress configuration completed successfully!'
         echo '🔍 Testing upload configuration without MU plugin - check if 64MB uploads work'
