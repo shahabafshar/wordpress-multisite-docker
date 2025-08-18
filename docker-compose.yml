@@ -32,8 +32,15 @@ services:
         # Set ownership and permissions with specific focus on problematic directories
         chown -R 33:33 /mnt/wp-content || echo "Ownership change failed, continuing..."
         chmod -R 755 /mnt/wp-content/uploads || echo "Permission change failed, continuing..."
-
+ 
+        # Specifically fix unlimited_elements_cache permissions (needs write access for plugin)
+        chmod 777 /mnt/wp-content/uploads/unlimited_elements_cache || echo "Unlimited elements cache chmod failed, continuing..."
+        chown -R 33:33 /mnt/wp-content/uploads/unlimited_elements_cache || echo "Unlimited elements cache chown failed, continuing..."
         
+        # Ensure parent directory is also writable for file creation
+        chmod 755 /mnt/wp-content/uploads || echo "Main uploads chmod failed, continuing..."
+        chown 33:33 /mnt/wp-content/uploads || echo "Main uploads chown failed, continuing..."
+               
         # Create security .htaccess
         echo "Options -Indexes" > /mnt/wp-content/uploads/.htaccess || echo "htaccess creation failed, continuing..."
         echo "Order deny,allow" >> /mnt/wp-content/uploads/.htaccess || echo "htaccess line failed, continuing..."
