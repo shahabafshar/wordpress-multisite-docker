@@ -319,8 +319,8 @@ services:
         echo ""
         echo "Testing PHP settings after .htaccess:"
         
-        echo "=== WordPress Filter Override Applied ==="
-        echo "WordPress upload filters have been configured to force 64MB limit"
+        echo "=== WordPress Upload Configuration ==="
+        echo "Testing if PHP configuration and .htaccess are sufficient for 64MB uploads"
         
         echo "=== Force Restart PHP-FPM ==="
         # Try to restart PHP-FPM to pick up any configuration changes
@@ -335,31 +335,11 @@ services:
         echo "WordPress volumes:" && ls -la /var/www/html/php-uploads-config/ 2>/dev/null || echo "No php-uploads-config in wordpress volume"
         echo "MU plugins dir:" && ls -la /var/www/html/wp-content/mu-plugins/ 2>/dev/null || echo "No mu-plugins dir yet"
         
-        echo "=== Creating Must-Use Plugin for Upload Override ==="
-        # Create a must-use plugin that forces upload limits
-        mkdir -p /var/www/html/wp-content/mu-plugins || echo "MU plugins dir creation failed, continuing..."
-        echo '<?php' > /var/www/html/wp-content/mu-plugins/force-upload-limits.php || echo 'MU plugin creation failed, continuing...'
-        echo '// Force Upload Limits - Must Use Plugin' >> /var/www/html/wp-content/mu-plugins/force-upload-limits.php || echo 'MU plugin creation failed, continuing...'
-        echo 'add_filter("upload_size_limit", function() { return 67108864; }, 999);' >> /var/www/html/wp-content/mu-plugins/force-upload-limits.php || echo 'MU plugin creation failed, continuing...'
-        echo 'add_filter("wp_max_upload_size", function() { return 67108864; }, 999);' >> /var/www/html/wp-content/mu-plugins/force-upload-limits.php || echo 'MU plugin creation failed, continuing...'
-        echo 'add_action("init", function() { @ini_set("upload_max_filesize", "64M"); @ini_set("post_max_size", "64M"); });' >> /var/www/html/wp-content/mu-plugins/force-upload-limits.php || echo 'MU plugin creation failed, continuing...'
-
-        echo "MU plugin created:" && cat /var/www/html/wp-content/mu-plugins/force-upload-limits.php 2>/dev/null || echo "Failed to read MU plugin"
-        
-        echo "=== Creating diagnostic page ==="
-        # Create a diagnostic PHP page that works with WordPress
-        echo '<?php' > /var/www/html/upload-diagnostics.php || echo '⚠️  Diagnostic page creation failed, continuing...'
-        echo 'require_once("wp-load.php");' >> /var/www/html/upload-diagnostics.php || echo '⚠️  Diagnostic page creation failed, continuing...'
-        echo 'if (!current_user_can("administrator")) { wp_die("Access denied"); }' >> /var/www/html/upload-diagnostics.php || echo '⚠️  Diagnostic page creation failed, continuing...'
-        echo 'echo "<h1>Upload Diagnostics</h1>";' >> /var/www/html/upload-diagnostics.php || echo '⚠️  Diagnostic page creation failed, continuing...'
-        echo 'echo "upload_max_filesize: " . ini_get("upload_max_filesize") . "<br>";' >> /var/www/html/upload-diagnostics.php || echo '⚠️  Diagnostic page creation failed, continuing...'
-        echo 'echo "post_max_size: " . ini_get("post_max_size") . "<br>";' >> /var/www/html/upload-diagnostics.php || echo '⚠️  Diagnostic page creation failed, continuing...'
-        echo 'echo "WordPress max upload size: " . size_format(wp_max_upload_size()) . "<br>";' >> /var/www/html/upload-diagnostics.php || echo '⚠️  Diagnostic page creation failed, continuing...'
-        echo '?>' >> /var/www/html/upload-diagnostics.php || echo '⚠️  Diagnostic page creation failed, continuing...'
-
+        echo "=== Skipping Must-Use Plugin Creation ==="
+        echo "Testing if PHP configuration and .htaccess are sufficient without MU plugin"
         
         echo '✅ WordPress configuration completed successfully!'
-        echo '🔍 Access upload diagnostics at: https://your-domain.com/upload-diagnostics.php'
+        echo '🔍 Testing upload configuration without MU plugin - check if 64MB uploads work'
     networks:
       - wordpress_network
 
