@@ -76,6 +76,12 @@ services:
       - ./wp-content:/var/www/html/wp-content
       - ./plugins:/var/www/html/wp-content/plugins
       - ./themes:/var/www/html/wp-content/themes
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     networks:
       - wordpress_network
 
@@ -88,7 +94,7 @@ services:
       db:
         condition: service_started
       wordpress:
-        condition: service_started
+        condition: service_healthy
     environment:
       WORDPRESS_DB_HOST: ${WORDPRESS_DB_HOST}
       WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME}
@@ -123,9 +129,28 @@ services:
         
         echo "🚀 Starting WordPress initialization..."
         
-        # Wait for WordPress to be ready
-        echo "⏳ Waiting for WordPress to be ready..."
-        sleep 15
+        # Wait for database and WordPress to be ready
+        echo "⏳ Waiting for database and WordPress to be ready..."
+        
+        # Wait for database
+        echo "🔍 Checking database connection..."
+        until mysql -h ${WORDPRESS_DB_HOST} -u root -p${MYSQL_ROOT_PASSWORD} -e "SELECT 1" >/dev/null 2>&1; do
+          echo "⏳ Waiting for database to be ready..."
+          sleep 2
+        done
+        echo "✅ Database is ready"
+        
+        # Wait for WordPress to be accessible
+        echo "🔍 Waiting for WordPress to be accessible..."
+        until curl -f http://localhost/wp-admin/install.php >/dev/null 2>&1 || curl -f http://localhost/ >/dev/null 2>&1; do
+          echo "⏳ Waiting for WordPress to be ready..."
+          sleep 3
+        done
+        echo "✅ WordPress is ready"
+        
+        # Give WordPress a moment to fully initialize
+        echo "⏳ Allowing WordPress to fully initialize..."
+        sleep 5
         
         # 1. FIX UPLOAD PERMISSIONS (consolidated from permfix-uploads)
         echo "🔧 Setting up upload directory permissions..."
