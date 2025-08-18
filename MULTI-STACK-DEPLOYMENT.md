@@ -15,7 +15,6 @@ This guide explains how to deploy multiple instances of the WordPress multisite 
 ### **Core Stack Variables:**
 ```bash
 # Stack Configuration (REQUIRED for multiple deployments)
-STACK_NAME=wordpress-site1          # Unique name for each stack
 EXTERNAL_PORT=8080                  # Unique port for each stack
 
 # WordPress Configuration
@@ -25,7 +24,7 @@ WORDPRESS_ADMIN_PASSWORD=securepassword123
 WORDPRESS_ADMIN_EMAIL=admin@site1.com
 
 # Database Configuration
-WORDPRESS_DB_HOST=${STACK_NAME:-wordpress}-db
+WORDPRESS_DB_HOST=db
 WORDPRESS_DB_NAME=wordpress
 MYSQL_ROOT_PASSWORD=you-strong-complex-password
 ```
@@ -35,7 +34,6 @@ MYSQL_ROOT_PASSWORD=you-strong-complex-password
 ### **Stack 1: Main Site**
 ```bash
 # .env file for Stack 1
-STACK_NAME=wordpress-main
 EXTERNAL_PORT=8080
 WORDPRESS_TITLE="Main WordPress Site"
 WORDPRESS_ADMIN_EMAIL=admin@main-site.com
@@ -43,15 +41,14 @@ MYSQL_ROOT_PASSWORD=main-site-password-123
 ```
 
 **Result:**
-- Services: `wordpress-main-wp-init`, `wordpress-main-wordpress`, `wordpress-main-db`, `wordpress-main-redis`
+- Services: `wp-init`, `wordpress`, `db`, `redis`
 - Port: `8080`
-- Volumes: `wordpress-main_wordpress_data`, `wordpress-main_db_data`, `wordpress-main_redis_data`
-- Network: `wordpress-main_network`
+- Volumes: `wordpress_main_wordpress_data`, `wordpress_main_db_data`, `wordpress_main_redis_data`
+- Network: `wordpress_main_network`
 
 ### **Stack 2: Client Site**
 ```bash
 # .env file for Stack 2
-STACK_NAME=wordpress-client
 EXTERNAL_PORT=8081
 WORDPRESS_TITLE="Client WordPress Site"
 WORDPRESS_ADMIN_EMAIL=admin@client-site.com
@@ -59,15 +56,14 @@ MYSQL_ROOT_PASSWORD=client-site-password-456
 ```
 
 **Result:**
-- Services: `wordpress-client-wp-init`, `wordpress-client-wordpress`, `wordpress-client-db`, `wordpress-client-redis`
+- Services: `wp-init`, `wordpress`, `db`, `redis`
 - Port: `8081`
-- Volumes: `wordpress-client_wordpress_data`, `wordpress-client_db_data`, `wordpress-client_redis_data`
-- Network: `wordpress-client_network`
+- Volumes: `wordpress_client_wordpress_data`, `wordpress_client_db_data`, `wordpress_client_redis_data`
+- Network: `wordpress_client_network`
 
 ### **Stack 3: Development Site**
 ```bash
 # .env file for Stack 3
-STACK_NAME=wordpress-dev
 EXTERNAL_PORT=8082
 WORDPRESS_TITLE="Development WordPress Site"
 WORDPRESS_ADMIN_EMAIL=admin@dev-site.com
@@ -75,10 +71,10 @@ MYSQL_ROOT_PASSWORD=dev-site-password-789
 ```
 
 **Result:**
-- Services: `wordpress-dev-wp-init`, `wordpress-dev-wordpress`, `wordpress-dev-db`, `wordpress-dev-redis`
+- Services: `wp-init`, `wordpress`, `db`, `redis`
 - Port: `8082`
-- Volumes: `wordpress-dev_wordpress_data`, `wordpress-dev_db_data`, `wordpress-dev_redis_data`
-- Network: `wordpress-dev_network`
+- Volumes: `wordpress_dev_wordpress_data`, `wordpress_dev_db_data`, `wordpress_dev_redis_data`
+- Network: `wordpress_dev_network`
 
 ## 🔧 **Portainer Deployment Steps**
 
@@ -168,14 +164,14 @@ EXTERNAL_PORT=8083
 ```
 
 ### **Service Name Conflicts:**
-- Ensure `STACK_NAME` is unique
-- Check Portainer for existing stacks
-- Use descriptive names (e.g., `wordpress-main`, `wordpress-client`)
+- Service names are the same across all stacks (this is normal)
+- Portainer automatically prefixes volumes and networks with the stack name
+- Check Portainer for existing stacks with the same name
 
 ### **Volume Conflicts:**
 - Each stack automatically creates unique volume names
 - No manual volume management needed
-- Volumes are automatically named: `stackname_servicename`
+- Volumes are automatically named: `stackname_servicename` (e.g., `wordpress_main_wordpress_data`)
 
 ## ✅ **Benefits of Multi-Stack Deployment**
 
@@ -194,6 +190,7 @@ EXTERNAL_PORT=8083
 4. **Monitor resource usage** across all stacks
 5. **Regular backups** of each stack's volumes
 6. **Test deployments** in development first
+7. **Remember**: Service names are the same across stacks (Portainer handles isolation)
 
 ---
 

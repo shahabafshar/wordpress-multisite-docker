@@ -53,11 +53,10 @@ Edit `.env` file with your settings:
 
 ```env
 # Stack Configuration (REQUIRED for multiple deployments)
-STACK_NAME=wordpress
 EXTERNAL_PORT=8080
 
 # Database settings
-WORDPRESS_DB_HOST=${STACK_NAME:-wordpress}-db
+WORDPRESS_DB_HOST=db
 WORDPRESS_DB_NAME=wordpress
 MYSQL_ROOT_PASSWORD=your-strong-password
 

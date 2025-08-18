@@ -2,14 +2,14 @@ version: '3.8'
 
 services:
   # ── WORDPRESS INITIALIZATION ──
-  ${STACK_NAME:-wordpress}-wp-init:
+  wp-init:
     image: wordpress:cli
     restart: "no"
     user: "0:0"
     depends_on:
-      ${STACK_NAME:-wordpress}-db:
+      db:
         condition: service_started
-      ${STACK_NAME:-wordpress}-wordpress:
+      wordpress:
         condition: service_started
     environment:
       WORDPRESS_DB_HOST: ${WORDPRESS_DB_HOST}
@@ -31,7 +31,7 @@ services:
       HOME: /tmp
     working_dir: /var/www/html
     volumes:
-      - ${STACK_NAME:-wordpress}_wordpress_data:/var/www/html
+      - wordpress_data:/var/www/html
       - ./wp-content:/var/www/html/wp-content
       - ./plugins:/var/www/html/wp-content/plugins
       - ./themes:/var/www/html/wp-content/themes
@@ -285,34 +285,34 @@ services:
       - wordpress_network
 
   # ── DATABASE ──
-  ${STACK_NAME:-wordpress}-db:
+  db:
     image: mariadb:${MARIADB_VERSION:-11.5}
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${WORDPRESS_DB_NAME}
     volumes:
-      - ${STACK_NAME:-wordpress}_db_data:/var/lib/mysql
+      - db_data:/var/lib/mysql
     networks:
-      - ${STACK_NAME:-wordpress}_network
+      - wordpress_network
 
   # ── REDIS ──
-  ${STACK_NAME:-wordpress}-redis:
+  redis:
     image: redis:${REDIS_VERSION:-alpine}
     restart: unless-stopped
     volumes:
-      - ${STACK_NAME:-wordpress}_redis_data:/data
+      - redis_data:/data
     networks:
-      - ${STACK_NAME:-wordpress}_network
+      - wordpress_network
 
   # ── WORDPRESS ──
-  ${STACK_NAME:-wordpress}-wordpress:
+  wordpress:
     image: wordpress:latest
     restart: unless-stopped
     depends_on:
-      ${STACK_NAME:-wordpress}-db:
+      db:
         condition: service_started
-      ${STACK_NAME:-wordpress}-redis:
+      redis:
         condition: service_started
     ports:
       - "${EXTERNAL_PORT:-8080}:80"
@@ -329,7 +329,7 @@ services:
       PHP_POST_MAX_SIZE: ${POST_MAX_SIZE:-64M}
       PHP_MEMORY_LIMIT: ${MEMORY_LIMIT:-256M}
       WORDPRESS_CONFIG_EXTRA: |
-        if (!defined('WP_REDIS_HOST')) define('WP_REDIS_HOST', '${STACK_NAME:-wordpress}-redis');
+        if (!defined('WP_REDIS_HOST')) define('WP_REDIS_HOST', 'redis');
         if (!defined('WP_REDIS_PORT')) define('WP_REDIS_PORT', 6379);
         if (!defined('WP_REDIS_DATABASE')) define('WP_REDIS_DATABASE', 0);
         if (!defined('WP_REDIS_PASSWORD')) define('WP_REDIS_PASSWORD', '');
@@ -355,21 +355,21 @@ services:
         if (!defined('WP_DEBUG')) define('WP_DEBUG', false);
         if (!defined('WP_DEBUG_LOG')) define('WP_DEBUG_LOG', false);
     volumes:
-      - ${STACK_NAME:-wordpress}_wordpress_data:/var/www/html
+      - wordpress_data:/var/www/html
       - ./wp-content:/var/www/html/wp-content
       - ./plugins:/var/www/html/wp-content/plugins
       - ./themes:/var/www/html/wp-content/themes
     networks:
-      - ${STACK_NAME:-wordpress}_network
+      - wordpress_network
 
 volumes:
-  ${STACK_NAME:-wordpress}_db_data:
+  db_data:
     driver: local
-  ${STACK_NAME:-wordpress}_redis_data:
+  redis_data:
     driver: local
-  ${STACK_NAME:-wordpress}_wordpress_data:
+  wordpress_data:
     driver: local
 
 networks:
-  ${STACK_NAME:-wordpress}_network:
+  wordpress_network:
     driver: bridge 
