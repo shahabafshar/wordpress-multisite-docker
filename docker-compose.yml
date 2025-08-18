@@ -104,6 +104,7 @@ services:
   wordpress:
     image: wordpress:latest
     restart: unless-stopped
+    user: "33:33"
     depends_on:
       db:
         condition: service_started
@@ -163,7 +164,7 @@ services:
   wp-cli-init:
     image: wordpress:cli
     restart: "no"
-    user: "0:0"
+    user: "33:33"
     depends_on:
       db:
         condition: service_started
@@ -206,23 +207,25 @@ services:
         echo '⏳ Waiting for database and WordPress to be ready...'
         sleep 15
         
+
+        
         echo '🔍 Checking if WordPress is already installed...'
-        if su -s /bin/sh www-data -c 'wp core is-installed' 2>/dev/null; then
+        if wp core is-installed 2>/dev/null; then
           echo '✅ WordPress is already installed!'
           echo '🔧 Checking if multisite is enabled...'
-          if su -s /bin/sh www-data -c 'wp core is-installed --network' 2>/dev/null; then
+          if wp core is-installed --network 2>/dev/null; then
             echo '✅ Multisite is already enabled!'
           else
             echo '🚀 Enabling multisite for existing WordPress...'
-            su -s /bin/sh www-data -c "wp core multisite-install --title='${WORDPRESS_TITLE}' --admin_email='${WORDPRESS_ADMIN_EMAIL}'"
+            wp core multisite-install --title="${WORDPRESS_TITLE}" --admin_email="${WORDPRESS_ADMIN_EMAIL}"
             echo '🔧 Adding multisite constants to wp-config.php...'
-            su -s /bin/sh www-data -c "wp config set WP_ALLOW_MULTISITE true --raw"
-            su -s /bin/sh www-data -c "wp config set MULTISITE true --raw"
-            su -s /bin/sh www-data -c "wp config set SUBDOMAIN_INSTALL '${SUBDOMAIN_INSTALL:-false}' --raw"
-            su -s /bin/sh www-data -c "wp config set DOMAIN_CURRENT_SITE '${DOMAIN_CURRENT_SITE}'"
-            su -s /bin/sh www-data -c "wp config set PATH_CURRENT_SITE '/'"
-            su -s /bin/sh www-data -c "wp config set SITE_ID_CURRENT_SITE 1 --raw"
-            su -s /bin/sh www-data -c "wp config set BLOG_ID_CURRENT_SITE 1 --raw"
+            wp config set WP_ALLOW_MULTISITE true --raw
+            wp config set MULTISITE true --raw
+            wp config set SUBDOMAIN_INSTALL "${SUBDOMAIN_INSTALL:-false}" --raw
+            wp config set DOMAIN_CURRENT_SITE "${DOMAIN_CURRENT_SITE}"
+            wp config set PATH_CURRENT_SITE '/'
+            wp config set SITE_ID_CURRENT_SITE 1 --raw
+            wp config set BLOG_ID_CURRENT_SITE 1 --raw
             echo '📄 Creating .htaccess for multisite...'
             if [ "${SUBDOMAIN_INSTALL:-false}" = "false" ]; then
               echo 'RewriteEngine On' > /var/www/html/.htaccess || echo '⚠️  .htaccess creation failed, continuing...'
@@ -240,27 +243,27 @@ services:
               echo 'RewriteRule ^([_0-9a-zA-Z-]+/)?(.*\.php)$ $2 [L]' >> /var/www/html/.htaccess || echo '⚠️  .htaccess rule 12 failed, continuing...'
               echo 'RewriteRule . index.php [L]' >> /var/www/html/.htaccess || echo '⚠️  .htaccess rule 13 failed, continuing...'
             fi
-            chown www-data:www-data /var/www/html/.htaccess 2>/dev/null || echo '⚠️  .htaccess ownership failed, continuing...'
+
           fi
         else
-          echo '📝 Installing WordPress...'
-          su -s /bin/sh www-data -c "wp core install --url='https://${DOMAIN_CURRENT_SITE}' --title='${WORDPRESS_TITLE}' --admin_user='${WORDPRESS_ADMIN_USER}' --admin_password='${WORDPRESS_ADMIN_PASSWORD}' --admin_email='${WORDPRESS_ADMIN_EMAIL}' --skip-email"
-          echo '🔧 Configuring WordPress...'
-          su -s /bin/sh www-data -c "wp option update home 'https://${DOMAIN_CURRENT_SITE}'"
-          su -s /bin/sh www-data -c "wp option update siteurl 'https://${DOMAIN_CURRENT_SITE}'"
-          su -s /bin/sh www-data -c "wp rewrite structure '/%postname%/'"
-          su -s /bin/sh www-data -c "wp rewrite flush"
-          echo '✅ WordPress installed and configured successfully!'
-          echo '🚀 Enabling multisite...'
-          su -s /bin/sh www-data -c "wp core multisite-install --title='${WORDPRESS_TITLE}' --admin_email='${WORDPRESS_ADMIN_EMAIL}'"
-          echo '🔧 Adding multisite constants to wp-config.php...'
-          su -s /bin/sh www-data -c "wp config set WP_ALLOW_MULTISITE true --raw"
-          su -s /bin/sh www-data -c "wp config set MULTISITE true --raw"
-          su -s /bin/sh www-data -c "wp config set SUBDOMAIN_INSTALL '${SUBDOMAIN_INSTALL:-false}' --raw"
-          su -s /bin/sh www-data -c "wp config set DOMAIN_CURRENT_SITE '${DOMAIN_CURRENT_SITE}'"
-          su -s /bin/sh www-data -c "wp config set PATH_CURRENT_SITE '/'"
-          su -s /bin/sh www-data -c "wp config set SITE_ID_CURRENT_SITE 1 --raw"
-          su -s /bin/sh www-data -c "wp config set BLOG_ID_CURRENT_SITE 1 --raw"
+                      echo '📝 Installing WordPress...'
+            wp core install --url="https://${DOMAIN_CURRENT_SITE}" --title="${WORDPRESS_TITLE}" --admin_user="${WORDPRESS_ADMIN_USER}" --admin_password="${WORDPRESS_ADMIN_PASSWORD}" --admin_email="${WORDPRESS_ADMIN_EMAIL}" --skip-email
+            echo '🔧 Configuring WordPress...'
+            wp option update home "https://${DOMAIN_CURRENT_SITE}"
+            wp option update siteurl "https://${DOMAIN_CURRENT_SITE}"
+            wp rewrite structure '/%postname%/'
+            wp rewrite flush
+            echo '✅ WordPress installed and configured successfully!'
+            echo '🚀 Enabling multisite...'
+            wp core multisite-install --title="${WORDPRESS_TITLE}" --admin_email="${WORDPRESS_ADMIN_EMAIL}"
+            echo '🔧 Adding multisite constants to wp-config.php...'
+            wp config set WP_ALLOW_MULTISITE true --raw
+            wp config set MULTISITE true --raw
+            wp config set SUBDOMAIN_INSTALL "${SUBDOMAIN_INSTALL:-false}" --raw
+            wp config set DOMAIN_CURRENT_SITE "${DOMAIN_CURRENT_SITE}"
+            wp config set PATH_CURRENT_SITE '/'
+            wp config set SITE_ID_CURRENT_SITE 1 --raw
+            wp config set BLOG_ID_CURRENT_SITE 1 --raw
           echo '📄 Creating .htaccess for multisite...'
           if [ "${SUBDOMAIN_INSTALL:-false}" = "false" ]; then
             echo 'RewriteEngine On' > /var/www/html/.htaccess || echo '⚠️  .htaccess creation failed, continuing...'
@@ -278,7 +281,7 @@ services:
             echo 'RewriteRule ^([_0-9a-zA-Z-]+/)?(.*\.php)$ $2 [L]' >> /var/www/html/.htaccess || echo '⚠️  .htaccess rule 12 failed, continuing...'
             echo 'RewriteRule . index.php [L]' >> /var/www/html/.htaccess || echo '⚠️  .htaccess rule 13 failed, continuing...'
           fi
-          chown www-data:www-data /var/www/html/.htaccess 2>/dev/null || echo '⚠️  .htaccess ownership failed, continuing...'
+          
           echo '✅ WordPress Multisite setup completed!'
         fi
         
@@ -286,13 +289,13 @@ services:
         
         # Check current PHP settings
         echo "=== PHP Configuration Diagnosis ==="
-        su -s /bin/sh www-data -c "php -i | grep -E 'upload_max_filesize|post_max_size|memory_limit|max_execution_time|max_input_vars'" || echo '⚠️  PHP info failed, continuing...'
+        php -i | grep -E 'upload_max_filesize|post_max_size|memory_limit|max_execution_time|max_input_vars' || echo '⚠️  PHP info failed, continuing...'
         
         echo "=== Loaded PHP INI Files ==="
-        su -s /bin/sh www-data -c "php --ini" || echo '⚠️  PHP ini check failed, continuing...'
+        php --ini || echo '⚠️  PHP ini check failed, continuing...'
         
         echo "=== WordPress Upload Settings ==="
-        su -s /bin/sh www-data -c "wp eval 'echo \"WordPress max upload: \" . wp_max_upload_size() / 1024 / 1024 . \"MB\\n\";'" || echo '⚠️  WordPress upload check failed, continuing...'
+        wp eval 'echo "WordPress max upload: " . wp_max_upload_size() / 1024 / 1024 . "MB\n";' || echo '⚠️  WordPress upload check failed, continuing...'
         
         echo "=== Applying PHP Upload Configuration to .htaccess ==="
         # Check if upload config already added to prevent duplicates
@@ -300,7 +303,7 @@ services:
           if [ -f /var/www/html/wp-content/.htaccess-upload ]; then
             echo "" >> /var/www/html/.htaccess || echo "htaccess append failed, continuing..."
             cat /var/www/html/wp-content/.htaccess-upload >> /var/www/html/.htaccess || echo "htaccess upload config append failed, continuing..."
-            chown www-data:www-data /var/www/html/.htaccess 2>/dev/null || echo "htaccess ownership failed, continuing..."
+
             echo "Upload config added to .htaccess"
           else
             echo "No upload config file found"
@@ -325,7 +328,7 @@ services:
         
         echo "=== Final WordPress Upload Test ==="
         sleep 3  # Wait for potential restart
-        su -s /bin/sh www-data -c "wp eval 'echo \"Final WordPress max upload: \" . size_format(wp_max_upload_size()) . \"\\n\";'" || echo '⚠️  Final WordPress upload check failed, continuing...'
+        wp eval 'echo "Final WordPress max upload: " . size_format(wp_max_upload_size()) . "\n";' || echo '⚠️  Final WordPress upload check failed, continuing...'
         
         echo "=== Debug File System ==="
         echo "PHP uploads config exists?" && ls -la /usr/local/etc/php/conf.d/uploads.ini 2>/dev/null || echo "PHP uploads.ini NOT FOUND in container"
@@ -340,7 +343,7 @@ services:
         echo 'add_filter("upload_size_limit", function() { return 67108864; }, 999);' >> /var/www/html/wp-content/mu-plugins/force-upload-limits.php || echo 'MU plugin creation failed, continuing...'
         echo 'add_filter("wp_max_upload_size", function() { return 67108864; }, 999);' >> /var/www/html/wp-content/mu-plugins/force-upload-limits.php || echo 'MU plugin creation failed, continuing...'
         echo 'add_action("init", function() { @ini_set("upload_max_filesize", "64M"); @ini_set("post_max_size", "64M"); });' >> /var/www/html/wp-content/mu-plugins/force-upload-limits.php || echo 'MU plugin creation failed, continuing...'
-        chown www-data:www-data /var/www/html/wp-content/mu-plugins/force-upload-limits.php 2>/dev/null || echo 'MU plugin ownership failed, continuing...'
+
         echo "MU plugin created:" && cat /var/www/html/wp-content/mu-plugins/force-upload-limits.php 2>/dev/null || echo "Failed to read MU plugin"
         
         echo "=== Creating diagnostic page ==="
@@ -353,7 +356,7 @@ services:
         echo 'echo "post_max_size: " . ini_get("post_max_size") . "<br>";' >> /var/www/html/upload-diagnostics.php || echo '⚠️  Diagnostic page creation failed, continuing...'
         echo 'echo "WordPress max upload size: " . size_format(wp_max_upload_size()) . "<br>";' >> /var/www/html/upload-diagnostics.php || echo '⚠️  Diagnostic page creation failed, continuing...'
         echo '?>' >> /var/www/html/upload-diagnostics.php || echo '⚠️  Diagnostic page creation failed, continuing...'
-        chown www-data:www-data /var/www/html/upload-diagnostics.php 2>/dev/null || echo '⚠️  Diagnostic page ownership failed, continuing...'
+
         
         echo '✅ WordPress configuration completed successfully!'
         echo '🔍 Access upload diagnostics at: https://your-domain.com/upload-diagnostics.php'
