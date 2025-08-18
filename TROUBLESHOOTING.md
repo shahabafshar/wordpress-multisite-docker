@@ -242,7 +242,7 @@ docker exec -it CONTAINER_NAME tail -f /var/log/apache2/access.log
 ### 1. SSL Certificate Problems
 
 **Solution:**
-- Use a reverse proxy (like Traefik, Caddy, or Nginx Proxy Manager) for SSL termination
+- Use Nginx Proxy Manager for SSL termination
 - Configure SSL in reverse proxy
 - Verify certificate paths and permissions
 
