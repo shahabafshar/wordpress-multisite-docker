@@ -131,7 +131,7 @@ The installation process includes comprehensive error handling:
 - **🔧 Upload directory setup** - Automatically creates and sets permissions for upload directories
 - **✅ Smart installation** - Skips already installed plugins/themes to avoid warnings
 
-Check the `wp-init` container logs to see any warnings or failed installations.
+Check the `wp-cli-init` container logs to see any warnings or failed installations.
 
 ### 🔧 Upload Directory Setup
 The installation process automatically creates and secures upload directories:
@@ -150,23 +150,21 @@ The stack includes multiple security layers:
 - **Network Isolation**: Services only communicate internally
 - **WordPress Security**: Includes Wordfence plugin for additional protection
 
-### 🔧 Automatic WordPress Initialization
+### 🔧 Automatic Upload Directory Setup
 
-The stack includes a comprehensive initialization system that handles everything automatically:
+The stack includes an automatic upload permission system that runs before WordPress starts:
 
-- **Upload directory setup** - Pre-creates all necessary directories with correct permissions
-- **WordPress installation** - Automatically installs WordPress if not present
-- **Multisite conversion** - Converts single-site to multisite automatically
-- **Plugin installation** - Installs and activates essential plugins
-- **Theme installation** - Sets up default themes
-- **Upload limits** - Configures 64MB upload limits via Must-Use plugin
-- **Security measures** - Applies security .htaccess rules
+- **Pre-creates all necessary directories** - No more "directory doesn't exist" errors
+- **Sets correct permissions** - `www-data:www-data` ownership with group-writable permissions
+- **Year/month structure** - Pre-creates WordPress date-based upload paths for 2 years
+- **Plugin directories** - Elementor, Unlimited Elements, and other common plugin upload paths
+- **Security .htaccess** - Prevents PHP execution in upload directories
+- **Multisite support** - Creates `wp-content/uploads/sites/` for subsite uploads
 
-This eliminates common WordPress multisite issues like:
+This eliminates the common WordPress multisite upload errors like:
 - `mkdir(): Permission denied`
 - `mkdir(): No such file or directory` 
 - Plugin upload failures
-- Manual multisite setup
 
 ### 📁 Upload Limits Configuration
 The stack is configured to handle large image files by default:
@@ -210,7 +208,7 @@ MAX_EXECUTION_TIME=600        # Increase to 10 minutes
 
 ## 🏗️ Architecture
 
-The stack uses a **consolidated initialization approach** for maximum efficiency:
+The stack uses a **script-based initialization approach** for maximum reliability:
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
@@ -223,18 +221,18 @@ The stack uses a **consolidated initialization approach** for maximum efficiency
          └───────────────────────┼───────────────────────┘
                                  │
                     ┌─────────────────┐
-                    │   WP-Init       │
+                    │   WP-CLI Init   │
                     │   - Auto Setup  │
-                    │   - Permissions │
+                    │   - Script File │
                     │   - Internal    │
                     └─────────────────┘
 ```
 
-### 🔧 Consolidated Initialization
+### 🔧 Script-Based Initialization
 
-**Why Single Service?**
-- **✅ Eliminates Duplication**: No more duplicate permission logic
-- **✅ Faster Deployment**: Single container handles all initialization
-- **✅ Easier Maintenance**: One service to manage instead of two
+**Why Script Files?**
+- **✅ Reliable Parsing**: No Docker Compose YAML parsing issues
+- **✅ Easy Maintenance**: Simple bash script, easy to edit and debug
+- **✅ Version Control**: Script can be tracked separately from compose file
 - **✅ Portainer Compatible**: Works reliably in all deployment scenarios
-- **✅ Comprehensive**: Handles permissions, installation, plugins, and themes
+- **✅ Error Handling**: Comprehensive error handling and logging

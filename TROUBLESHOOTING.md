@@ -66,28 +66,25 @@ Access denied for user 'wpuser'@'172.19.0.4' (using password: YES)
 - Ensure MariaDB container is running
 - Check network connectivity between containers
 
-### 3. WordPress Initialization Issues
+### 3. WP-CLI Initialization Issues
 
 **Error:**
 ```
-wp-init container exits with error
+wp-cli-init container exits with error
 ```
 
 **Solutions:**
 
 #### Check Container Logs
 ```bash
-docker-compose logs wp-init
+docker-compose logs wp-cli-init
 ```
 
 #### Verify Database is Ready
-The wp-init container waits for the database and WordPress. If it fails:
+The WP-CLI container waits for the database. If it fails:
 ```bash
 # Check database container
 docker-compose logs db
-
-# Check WordPress container
-docker-compose logs wordpress
 
 # Restart the stack
 docker-compose restart
@@ -159,7 +156,7 @@ docker-compose logs
 # Specific service
 docker-compose logs wordpress
 docker-compose logs db
-docker-compose logs wp-init
+docker-compose logs wp-cli-init
 ```
 
 ### Check Container Status
