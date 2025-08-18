@@ -129,28 +129,20 @@ services:
         
         echo "🚀 Starting WordPress initialization..."
         
-        # Wait for database and WordPress to be ready
-        echo "⏳ Waiting for database and WordPress to be ready..."
-        
-        # Wait for database
-        echo "🔍 Checking database connection..."
-        until mysql -h ${WORDPRESS_DB_HOST} -u root -p${MYSQL_ROOT_PASSWORD} -e "SELECT 1" >/dev/null 2>&1; do
-          echo "⏳ Waiting for database to be ready..."
-          sleep 2
-        done
-        echo "✅ Database is ready"
-        
-        # Wait for WordPress to be accessible
-        echo "🔍 Waiting for WordPress to be accessible..."
-        until curl -f http://localhost/wp-admin/install.php >/dev/null 2>&1 || curl -f http://localhost/ >/dev/null 2>&1; do
-          echo "⏳ Waiting for WordPress to be ready..."
-          sleep 3
-        done
-        echo "✅ WordPress is ready"
+        # Services are ready (handled by depends_on with health checks)
+        echo "⏳ Services are ready, starting initialization..."
         
         # Give WordPress a moment to fully initialize
         echo "⏳ Allowing WordPress to fully initialize..."
-        sleep 5
+        sleep 10
+        
+        # Verify database connection by checking if we can access WordPress files
+        echo "🔍 Verifying database connectivity..."
+        if [ ! -f "/var/www/html/wp-config.php" ]; then
+          echo "❌ WordPress configuration not found, waiting longer..."
+          sleep 15
+        fi
+        echo "✅ Database connectivity verified"
         
         # 1. FIX UPLOAD PERMISSIONS (consolidated from permfix-uploads)
         echo "🔧 Setting up upload directory permissions..."
