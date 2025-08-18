@@ -142,12 +142,7 @@ services:
         @ini_set('max_execution_time', '${MAX_EXECUTION_TIME:-300}');
         @ini_set('max_input_vars', '${MAX_INPUT_VARS:-3000}');
         
-        # WordPress upload filter override - using hooks that work in wp-config.php
-        function wp_multisite_upload_limit_override() {
-          add_filter('upload_size_limit', function($size) { return 67108864; });
-          add_filter('wp_max_upload_size', function($size) { return 67108864; });
-        }
-        add_action('init', 'wp_multisite_upload_limit_override');
+        # Upload limits handled by Must-Use plugin (see wp-content/mu-plugins/force-upload-limits.php)
         
         # WordPress constants for upload handling
         if (!defined('WP_MEMORY_LIMIT')) define('WP_MEMORY_LIMIT', '${MEMORY_LIMIT:-256M}');
