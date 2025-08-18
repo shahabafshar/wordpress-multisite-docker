@@ -166,6 +166,12 @@ services:
         
         # Always install WP Super Cache (replaces WP Rocket)
         echo "⚡ Installing WP Super Cache..."
+        
+        # Ensure permissions are correct before plugin installation
+        echo "🔧 Ensuring permissions before WP Super Cache installation..."
+        chmod -R 775 /var/www/html/wp-content/uploads || echo "⚠️ Uploads chmod failed, continuing..."
+        chown -R www-data:www-data /var/www/html/wp-content/uploads || echo "⚠️ Uploads ownership failed, continuing..."
+        
         su -s /bin/sh www-data -c "wp plugin install wp-super-cache --activate --allow-root" || echo "⚠️ WP Super Cache installation failed, continuing..."
         
         # Step 3.5: Network activate plugins for multisite
@@ -175,6 +181,13 @@ services:
         echo "🔧 Ensuring plugin directories are writable..."
         chmod -R 775 /var/www/html/wp-content/uploads || echo "⚠️ Uploads chmod failed, continuing..."
         chown -R www-data:www-data /var/www/html/wp-content/uploads || echo "⚠️ Uploads ownership failed, continuing..."
+        
+        # Specifically fix unlimited_elements_cache before plugin operations
+        if [ -d "/var/www/html/wp-content/uploads/unlimited_elements_cache" ]; then
+          echo "🔧 Pre-fixing unlimited_elements_cache permissions..."
+          chmod -R 775 /var/www/html/wp-content/uploads/unlimited_elements_cache || echo "⚠️ Cache pre-fix failed, continuing..."
+          chown -R www-data:www-data /var/www/html/wp-content/uploads/unlimited_elements_cache || echo "⚠️ Cache pre-ownership failed, continuing..."
+        fi
         
         su -s /bin/sh www-data -c "wp plugin activate wordfence --network --allow-root" 2>/dev/null || echo "⚠️ Wordfence network activation failed, continuing..."
         su -s /bin/sh www-data -c "wp plugin activate wordpress-seo --network --allow-root" 2>/dev/null || echo "⚠️ Yoast SEO network activation failed, continuing..."
@@ -205,7 +218,16 @@ services:
         chmod -R 775 /var/www/html/wp-content/themes || echo "⚠️ Themes chmod failed, continuing..."
         chown -R www-data:www-data /var/www/html/wp-content/themes || echo "⚠️ Themes ownership failed, continuing..."
         
-        su -s /bin/sh www-data -c "wp theme activate hello-elementor --network --allow-root" 2>/dev/null || echo "⚠️ Hello Elementor network activation failed, continuing..."
+        # Network activate themes with better error handling
+        echo "🌐 Activating Hello Elementor theme network-wide..."
+        su -s /bin/sh www-data -c "wp theme activate hello-elementor --network --allow-root" 2>/dev/null && echo "✅ Hello Elementor network activated" || echo "⚠️ Hello Elementor network activation failed (may already be active), continuing..."
+        
+        # Check if theme is network active
+        if su -s /bin/sh www-data -c "wp theme list --status=active --network --allow-root" 2>/dev/null | grep -q "hello-elementor"; then
+          echo "✅ Hello Elementor is network active"
+        else
+          echo "⚠️ Hello Elementor not network active, but continuing..."
+        fi
         
         # Step 5: Create Must-Use plugin for upload limits
         echo "🔧 Creating Must-Use plugin for upload limits..."
@@ -238,8 +260,19 @@ services:
           chown www-data:www-data /var/www/html/wp-content/uploads/unlimited_elements_cache/index.html || echo "⚠️ Index file ownership failed, continuing..."
         fi
         
-        # Set upload directory permissions
-        chown -R www-data:www-data /var/www/html/wp-content/uploads || echo "⚠️ Final upload permissions failed, continuing..."
+        # Final comprehensive permission fix
+        echo "🔧 Applying final comprehensive permission fix..."
+        chmod -R 775 /var/www/html/wp-content/uploads || echo "⚠️ Final uploads chmod failed, continuing..."
+        chown -R www-data:www-data /var/www/html/wp-content/uploads || echo "⚠️ Final uploads ownership failed, continuing..."
+        
+        # Verify key directories are writable
+        echo "🔍 Verifying directory permissions..."
+        if [ -w "/var/www/html/wp-content/uploads/unlimited_elements_cache" ]; then
+          echo "✅ unlimited_elements_cache is writable"
+        else
+          echo "⚠️ unlimited_elements_cache is not writable, attempting final fix..."
+          chmod 775 /var/www/html/wp-content/uploads/unlimited_elements_cache 2>/dev/null || echo "⚠️ Final cache fix failed"
+        fi
         
         echo "🎉 WordPress multisite initialization completed successfully!"
         echo "📋 Summary:"
