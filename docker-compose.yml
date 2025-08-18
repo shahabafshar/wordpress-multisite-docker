@@ -282,33 +282,18 @@ services:
         echo "uploads.ini contents:" && cat /usr/local/etc/php/conf.d/uploads.ini 2>/dev/null || echo "Cannot read uploads.ini"
         
         echo "=== Creating diagnostic page ==="
-        # Create a diagnostic PHP page for web access
-        cat > /var/www/html/upload-diagnostics.php << 'EOF' || echo '⚠️  Diagnostic page creation failed, continuing...'
-<?php
-if (!current_user_can('administrator')) {
-    wp_die('Access denied. Administrator access required.');
-}
-echo "<h1>Upload Diagnostics</h1>";
-echo "<h2>PHP Settings:</h2>";
-echo "upload_max_filesize: " . ini_get('upload_max_filesize') . "<br>";
-echo "post_max_size: " . ini_get('post_max_size') . "<br>";
-echo "memory_limit: " . ini_get('memory_limit') . "<br>";
-echo "max_execution_time: " . ini_get('max_execution_time') . "<br>";
-echo "max_input_vars: " . ini_get('max_input_vars') . "<br>";
-echo "file_uploads: " . (ini_get('file_uploads') ? 'On' : 'Off') . "<br>";
-
-echo "<h2>WordPress Settings:</h2>";
-echo "WordPress max upload size: " . size_format(wp_max_upload_size()) . "<br>";
-
-echo "<h2>PHP INI Files:</h2>";
-echo "Loaded configuration file: " . php_ini_loaded_file() . "<br>";
-echo "Additional INI files: " . php_ini_scanned_dir() . "<br>";
-
-echo "<h2>Server Info:</h2>";
-echo "PHP Version: " . phpversion() . "<br>";
-echo "Server Software: " . $_SERVER['SERVER_SOFTWARE'] . "<br>";
-?>
-EOF
+        # Create a diagnostic PHP page for web access using echo commands
+        echo '<?php' > /var/www/html/upload-diagnostics.php || echo '⚠️  Diagnostic page creation failed, continuing...'
+        echo 'if (!current_user_can("administrator")) {' >> /var/www/html/upload-diagnostics.php || echo '⚠️  Diagnostic page creation failed, continuing...'
+        echo '    wp_die("Access denied. Administrator access required.");' >> /var/www/html/upload-diagnostics.php || echo '⚠️  Diagnostic page creation failed, continuing...'
+        echo '}' >> /var/www/html/upload-diagnostics.php || echo '⚠️  Diagnostic page creation failed, continuing...'
+        echo 'echo "<h1>Upload Diagnostics</h1>";' >> /var/www/html/upload-diagnostics.php || echo '⚠️  Diagnostic page creation failed, continuing...'
+        echo 'echo "<h2>PHP Settings:</h2>";' >> /var/www/html/upload-diagnostics.php || echo '⚠️  Diagnostic page creation failed, continuing...'
+        echo 'echo "upload_max_filesize: " . ini_get("upload_max_filesize") . "<br>";' >> /var/www/html/upload-diagnostics.php || echo '⚠️  Diagnostic page creation failed, continuing...'
+        echo 'echo "post_max_size: " . ini_get("post_max_size") . "<br>";' >> /var/www/html/upload-diagnostics.php || echo '⚠️  Diagnostic page creation failed, continuing...'
+        echo 'echo "memory_limit: " . ini_get("memory_limit") . "<br>";' >> /var/www/html/upload-diagnostics.php || echo '⚠️  Diagnostic page creation failed, continuing...'
+        echo 'echo "WordPress max upload size: " . size_format(wp_max_upload_size()) . "<br>";' >> /var/www/html/upload-diagnostics.php || echo '⚠️  Diagnostic page creation failed, continuing...'
+        echo '?>' >> /var/www/html/upload-diagnostics.php || echo '⚠️  Diagnostic page creation failed, continuing...'
         chown www-data:www-data /var/www/html/upload-diagnostics.php 2>/dev/null || echo '⚠️  Diagnostic page ownership failed, continuing...'
         
         echo '✅ WordPress configuration completed successfully!'
