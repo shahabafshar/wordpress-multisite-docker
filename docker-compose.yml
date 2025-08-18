@@ -117,49 +117,49 @@ services:
         echo "🔌 Installing plugins..."
         
         # Wordfence Security
-        if [ "\${INSTALL_WORDFENCE}" = "true" ]; then
+        if [ "\${INSTALL_WORDFENCE:-true}" = "true" ]; then
           echo "🛡️ Installing Wordfence Security..."
           su -s /bin/sh www-data -c "wp plugin install wordfence --activate --allow-root" || echo "⚠️ Wordfence installation failed, continuing..."
         fi
         
         # Yoast SEO
-        if [ "\${INSTALL_YOAST_SEO}" = "true" ]; then
+        if [ "\${INSTALL_YOAST_SEO:-true}" = "true" ]; then
           echo "🔍 Installing Yoast SEO..."
           su -s /bin/sh www-data -c "wp plugin install wordpress-seo --activate --allow-root" || echo "⚠️ Yoast SEO installation failed, continuing..."
         fi
         
         # Contact Form 7
-        if [ "\${INSTALL_CONTACT_FORM_7}" = "true" ]; then
+        if [ "\${INSTALL_CONTACT_FORM_7:-true}" = "true" ]; then
           echo "📝 Installing Contact Form 7..."
           su -s /bin/sh www-data -c "wp plugin install contact-form-7 --activate --allow-root" || echo "⚠️ Contact Form 7 installation failed, continuing..."
         fi
         
         # WooCommerce
-        if [ "\${INSTALL_WOOCOMMERCE}" = "true" ]; then
+        if [ "\${INSTALL_WOOCOMMERCE:-true}" = "true" ]; then
           echo "🛒 Installing WooCommerce..."
           su -s /bin/sh www-data -c "wp plugin install woocommerce --activate --allow-root" || echo "⚠️ WooCommerce installation failed, continuing..."
         fi
         
         # Elementor
-        if [ "\${INSTALL_ELEMENTOR}" = "true" ]; then
+        if [ "\${INSTALL_ELEMENTOR:-true}" = "true" ]; then
           echo "🎨 Installing Elementor..."
           su -s /bin/sh www-data -c "wp plugin install elementor --activate --allow-root" || echo "⚠️ Elementor installation failed, continuing..."
         fi
         
         # Google Site Kit
-        if [ "\${INSTALL_GOOGLE_SITE_KIT}" = "true" ]; then
+        if [ "\${INSTALL_GOOGLE_SITE_KIT:-true}" = "true" ]; then
           echo "📊 Installing Google Site Kit..."
           su -s /bin/sh www-data -c "wp plugin install google-site-kit --activate --allow-root" || echo "⚠️ Google Site Kit installation failed, continuing..."
         fi
         
         # UpdraftPlus
-        if [ "\${INSTALL_UPDRAFTPLUS}" = "true" ]; then
+        if [ "\${INSTALL_UPDRAFTPLUS:-true}" = "true" ]; then
           echo "💾 Installing UpdraftPlus..."
           su -s /bin/sh www-data -c "wp plugin install updraftplus --activate --allow-root" || echo "⚠️ UpdraftPlus installation failed, continuing..."
         fi
         
         # NS Cloner
-        if [ "\${INSTALL_NS_CLONER}" = "true" ]; then
+        if [ "\${INSTALL_NS_CLONER:-true}" = "true" ]; then
           echo "🔄 Installing NS Cloner..."
           su -s /bin/sh www-data -c "wp plugin install ns-cloner-site-copier --activate --allow-root" || echo "⚠️ NS Cloner installation failed, continuing..."
         fi
@@ -170,6 +170,12 @@ services:
         
         # Step 3.5: Network activate plugins for multisite
         echo "🌐 Network activating plugins for multisite..."
+        
+        # Fix permissions before network activation to prevent plugin errors
+        echo "🔧 Ensuring plugin directories are writable..."
+        chmod -R 775 /var/www/html/wp-content/uploads || echo "⚠️ Uploads chmod failed, continuing..."
+        chown -R www-data:www-data /var/www/html/wp-content/uploads || echo "⚠️ Uploads ownership failed, continuing..."
+        
         su -s /bin/sh www-data -c "wp plugin activate wordfence --network --allow-root" 2>/dev/null || echo "⚠️ Wordfence network activation failed, continuing..."
         su -s /bin/sh www-data -c "wp plugin activate wordpress-seo --network --allow-root" 2>/dev/null || echo "⚠️ Yoast SEO network activation failed, continuing..."
         su -s /bin/sh www-data -c "wp plugin activate contact-form-7 --network --allow-root" 2>/dev/null || echo "⚠️ Contact Form 7 network activation failed, continuing..."
@@ -193,6 +199,12 @@ services:
         
         # Step 4.5: Network activate themes for multisite
         echo "🌐 Network activating themes for multisite..."
+        
+        # Fix permissions before theme activation
+        echo "🔧 Ensuring theme directories are writable..."
+        chmod -R 775 /var/www/html/wp-content/themes || echo "⚠️ Themes chmod failed, continuing..."
+        chown -R www-data:www-data /var/www/html/wp-content/themes || echo "⚠️ Themes ownership failed, continuing..."
+        
         su -s /bin/sh www-data -c "wp theme activate hello-elementor --network --allow-root" 2>/dev/null || echo "⚠️ Hello Elementor network activation failed, continuing..."
         
         # Step 5: Create Must-Use plugin for upload limits
@@ -214,8 +226,17 @@ services:
         
         # Ensure unlimited_elements_cache is writable after plugin installation
         echo "🔧 Fixing plugin cache directory permissions..."
-        chmod 775 /var/www/html/wp-content/uploads/unlimited_elements_cache || echo "⚠️ Cache directory chmod failed, continuing..."
-        chown -R www-data:www-data /var/www/html/wp-content/uploads/unlimited_elements_cache || echo "⚠️ Cache directory ownership failed, continuing..."
+        
+        # Fix unlimited_elements_cache directory specifically
+        if [ -d "/var/www/html/wp-content/uploads/unlimited_elements_cache" ]; then
+          echo "🔧 Fixing unlimited_elements_cache permissions..."
+          chmod -R 775 /var/www/html/wp-content/uploads/unlimited_elements_cache || echo "⚠️ Cache directory chmod failed, continuing..."
+          chown -R www-data:www-data /var/www/html/wp-content/uploads/unlimited_elements_cache || echo "⚠️ Cache directory ownership failed, continuing..."
+          
+          # Create index.html to prevent directory listing
+          echo "<!-- Directory listing disabled -->" > /var/www/html/wp-content/uploads/unlimited_elements_cache/index.html || echo "⚠️ Index file creation failed, continuing..."
+          chown www-data:www-data /var/www/html/wp-content/uploads/unlimited_elements_cache/index.html || echo "⚠️ Index file ownership failed, continuing..."
+        fi
         
         # Set upload directory permissions
         chown -R www-data:www-data /var/www/html/wp-content/uploads || echo "⚠️ Final upload permissions failed, continuing..."
