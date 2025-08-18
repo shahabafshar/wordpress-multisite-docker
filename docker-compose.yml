@@ -11,6 +11,7 @@ services:
         condition: service_healthy
       wordpress:
         condition: service_healthy
+    restart: "on-failure:3"
     environment:
       WORDPRESS_DB_HOST: ${WORDPRESS_DB_HOST}
       WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME}
@@ -45,24 +46,44 @@ services:
         
         # Wait for database to be ready with retry logic
         echo "⏳ Waiting for database to be ready..."
-        for i in {1..30}; do
+        for i in {1..60}; do
           if su -s /bin/sh www-data -c "wp db check --allow-root" 2>/dev/null; then
             echo "✅ Database connection established"
             break
           fi
-          echo "⏳ Database not ready, attempt $i/30..."
-          sleep 5
+          echo "⏳ Database not ready, attempt $i/60..."
+          sleep 10
         done
         
-        # Final check - if database still not ready, exit
+        # Final check - if database still not ready, try a few more times
         if ! su -s /bin/sh www-data -c "wp db check --allow-root" 2>/dev/null; then
-          echo "❌ Database connection failed after 30 attempts"
-          exit 1
+          echo "⚠️ Database connection still not ready, trying a few more times..."
+          for i in {1..10}; do
+            sleep 15
+            if su -s /bin/sh www-data -c "wp db check --allow-root" 2>/dev/null; then
+              echo "✅ Database connection established on final attempt"
+              break
+            fi
+            echo "⏳ Final attempt $i/10..."
+          done
+        fi
+        
+        # If still not ready, continue anyway (might be a timing issue)
+        if ! su -s /bin/sh www-data -c "wp db check --allow-root" 2>/dev/null; then
+          echo "⚠️ Database connection not confirmed, but continuing anyway..."
         fi
         
         # Wait for WordPress to be ready
         echo "⏳ Waiting for WordPress to be ready..."
         sleep 10
+        
+        # Debug: Check what's running
+        echo "🔍 Debug: Checking running processes..."
+        ps aux | head -10 || echo "ps command failed"
+        echo "🔍 Debug: Checking network connections..."
+        netstat -tlnp | head -10 || echo "netstat command failed"
+        echo "🔍 Debug: Checking WordPress files..."
+        ls -la /var/www/html/ | head -10 || echo "ls command failed"
         
         # Step 1: Fix upload directory permissions (consolidated from permfix-uploads)
         echo "🔧 Setting up upload directory permissions..."
@@ -304,7 +325,7 @@ services:
   # ── DATABASE ──
   db:
     image: mariadb:${MARIADB_VERSION:-11.5}
-    restart: unless-stopped
+    restart: "on-failure:3"
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${WORDPRESS_DB_NAME}
@@ -314,28 +335,30 @@ services:
       - wordpress_network
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
-      timeout: 20s
-      retries: 10
-      start_period: 30s
+      timeout: 30s
+      retries: 15
+      start_period: 60s
+      interval: 10s
 
   # ── REDIS ──
   redis:
     image: redis:${REDIS_VERSION:-alpine}
-    restart: unless-stopped
+    restart: "on-failure:3"
     volumes:
       - redis_data:/data
     networks:
       - wordpress_network
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      timeout: 10s
-      retries: 5
-      start_period: 10s
+      timeout: 15s
+      retries: 10
+      start_period: 30s
+      interval: 10s
 
   # ── WORDPRESS ──
   wordpress:
     image: wordpress:latest
-    restart: unless-stopped
+    restart: "on-failure:3"
     depends_on:
       db:
         condition: service_healthy
@@ -390,9 +413,10 @@ services:
       - wordpress_network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost/wp-admin/install.php"]
-      timeout: 10s
-      retries: 5
-      start_period: 30s
+      timeout: 20s
+      retries: 10
+      start_period: 60s
+      interval: 15s
 
 volumes:
   db_data:

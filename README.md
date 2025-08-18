@@ -47,6 +47,9 @@ A production-ready WordPress Docker stack with **automatic WordPress Multisite i
 ### **🌐 Multiple Deployments**
 This stack supports **multiple deployments** on the same server without conflicts. See [MULTI-STACK-DEPLOYMENT.md](MULTI-STACK-DEPLOYMENT.md) for detailed instructions.
 
+### **🚨 Troubleshooting**
+If you encounter container startup issues, see [CONTAINER-TROUBLESHOOTING.md](CONTAINER-TROUBLESHOOTING.md) for solutions.
+
 ### 2. Configure Environment
 
 Edit `.env` file with your settings:
