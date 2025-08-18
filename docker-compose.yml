@@ -31,21 +31,7 @@ services:
         mkdir -p /mnt/wp-content/uploads/unlimited_elements || echo "Unlimited Elements dir creation failed, continuing..."
         mkdir -p /mnt/wp-content/uploads/unlimited_elements_cache || echo "Unlimited Elements cache dir creation failed, continuing..."
         
-        # Create a custom PHP configuration that will be mounted
-        mkdir -p /mnt/php-uploads-config || echo "PHP uploads config dir creation failed, continuing..."
-        echo "; WordPress Upload Override" > /mnt/php-uploads-config/uploads.ini || echo "PHP uploads ini creation failed, continuing..."
-        echo "upload_max_filesize = 64M" >> /mnt/php-uploads-config/uploads.ini || echo "PHP uploads ini failed, continuing..."
-        echo "post_max_size = 64M" >> /mnt/php-uploads-config/uploads.ini || echo "PHP uploads ini failed, continuing..."
-        echo "memory_limit = 256M" >> /mnt/php-uploads-config/uploads.ini || echo "PHP uploads ini failed, continuing..."
-        echo "max_execution_time = 300" >> /mnt/php-uploads-config/uploads.ini || echo "PHP uploads ini failed, continuing..."
-        echo "max_input_vars = 3000" >> /mnt/php-uploads-config/uploads.ini || echo "PHP uploads ini failed, continuing..."
-        echo "file_uploads = On" >> /mnt/php-uploads-config/uploads.ini || echo "PHP uploads ini failed, continuing..."
-        
-        # Also create .htaccess backup
-        echo "# Upload size configuration via .htaccess" > /mnt/wp-content/.htaccess-upload || echo "htaccess upload config failed, continuing..."
-        echo "php_value upload_max_filesize 64M" >> /mnt/wp-content/.htaccess-upload || echo "htaccess upload config failed, continuing..."
-        echo "php_value post_max_size 64M" >> /mnt/wp-content/.htaccess-upload || echo "htaccess upload config failed, continuing..."
-        echo "php_value memory_limit 256M" >> /mnt/wp-content/.htaccess-upload || echo "htaccess upload config failed, continuing..."
+
         
         # Set ownership and permissions with specific focus on problematic directories
         chown -R 33:33 /mnt/wp-content || echo "Ownership change failed, continuing..."
@@ -75,7 +61,6 @@ services:
         echo "✅ Upload permissions fixed successfully"
     volumes:
       - ./wp-content:/mnt/wp-content
-      - ./php-uploads-config:/mnt/php-uploads-config
     networks:
       - wordpress_network
 
@@ -143,7 +128,7 @@ services:
         @ini_set('max_execution_time', '${MAX_EXECUTION_TIME:-300}');
         @ini_set('max_input_vars', '${MAX_INPUT_VARS:-3000}');
         
-        # Upload limits handled by Must-Use plugin (see wp-content/mu-plugins/force-upload-limits.php)
+        # Upload limits handled by PHP ini_set and .htaccess directives
         
         # WordPress constants for upload handling
         if (!defined('WP_MEMORY_LIMIT')) define('WP_MEMORY_LIMIT', '${MEMORY_LIMIT:-256M}');
@@ -282,81 +267,9 @@ services:
           echo '✅ WordPress Multisite setup completed!'
         fi
         
-        echo '🔧 Diagnosing PHP upload configuration...'
-        
-        # Check current PHP settings
-        echo "=== PHP Configuration Diagnosis ==="
-        su -s /bin/sh www-data -c "php -i | grep -E 'upload_max_filesize|post_max_size|memory_limit|max_execution_time|max_input_vars'" || echo '⚠️  PHP info failed, continuing...'
-        
-        echo "=== Loaded PHP INI Files ==="
-        su -s /bin/sh www-data -c "php --ini" || echo '⚠️  PHP ini check failed, continuing...'
-        
-        echo "=== WordPress Upload Settings ==="
-        su -s /bin/sh www-data -c "wp eval 'echo \"WordPress max upload: \" . wp_max_upload_size() / 1024 / 1024 . \"MB\\n\";'" || echo '⚠️  WordPress upload check failed, continuing...'
-        
-        echo "=== Applying PHP Upload Configuration to .htaccess ==="
-        # Check if upload config already added to prevent duplicates
-        if ! grep -q "Upload size configuration via .htaccess" /var/www/html/.htaccess 2>/dev/null; then
-          if [ -f /var/www/html/wp-content/.htaccess-upload ]; then
-            echo "" >> /var/www/html/.htaccess || echo "htaccess append failed, continuing..."
-            cat /var/www/html/wp-content/.htaccess-upload >> /var/www/html/.htaccess || echo "htaccess upload config append failed, continuing..."
-            chown www-data:www-data /var/www/html/.htaccess 2>/dev/null || echo "htaccess ownership failed, continuing..."
-            echo "Upload config added to .htaccess"
-          else
-            echo "No upload config file found"
-          fi
-        else
-          echo "Upload config already exists in .htaccess"
-        fi
-        
-        echo "=== File System Check ==="
-        echo ".htaccess contents:" && tail -20 /var/www/html/.htaccess 2>/dev/null || echo "Cannot read .htaccess"
-        echo ""
-        echo "Upload config file:" && cat /var/www/html/wp-content/.htaccess-upload 2>/dev/null || echo "Upload config not found"
-        echo ""
-        echo "Testing PHP settings after .htaccess:"
-        
-        echo "=== WordPress Filter Override Applied ==="
-        echo "WordPress upload filters have been configured to force 64MB limit"
-        
-        echo "=== Force Restart PHP-FPM ==="
-        # Try to restart PHP-FPM to pick up any configuration changes
-        echo "Skipping PHP-FPM restart (requires different approach)"
-        
-        echo "=== Final WordPress Upload Test ==="
-        sleep 3  # Wait for potential restart
-        su -s /bin/sh www-data -c "wp eval 'echo \"Final WordPress max upload: \" . size_format(wp_max_upload_size()) . \"\\n\";'" || echo '⚠️  Final WordPress upload check failed, continuing...'
-        
-        echo "=== Debug File System ==="
-        echo "PHP uploads config exists?" && ls -la /usr/local/etc/php/conf.d/uploads.ini 2>/dev/null || echo "PHP uploads.ini NOT FOUND in container"
-        echo "WordPress volumes:" && ls -la /var/www/html/php-uploads-config/ 2>/dev/null || echo "No php-uploads-config in wordpress volume"
-        echo "MU plugins dir:" && ls -la /var/www/html/wp-content/mu-plugins/ 2>/dev/null || echo "No mu-plugins dir yet"
-        
-        echo "=== Creating Must-Use Plugin for Upload Override ==="
-        # Create a must-use plugin that forces upload limits
-        mkdir -p /var/www/html/wp-content/mu-plugins || echo "MU plugins dir creation failed, continuing..."
-        echo '<?php' > /var/www/html/wp-content/mu-plugins/force-upload-limits.php || echo 'MU plugin creation failed, continuing...'
-        echo '// Force Upload Limits - Must Use Plugin' >> /var/www/html/wp-content/mu-plugins/force-upload-limits.php || echo 'MU plugin creation failed, continuing...'
-        echo 'add_filter("upload_size_limit", function() { return 67108864; }, 999);' >> /var/www/html/wp-content/mu-plugins/force-upload-limits.php || echo 'MU plugin creation failed, continuing...'
-        echo 'add_filter("wp_max_upload_size", function() { return 67108864; }, 999);' >> /var/www/html/wp-content/mu-plugins/force-upload-limits.php || echo 'MU plugin creation failed, continuing...'
-        echo 'add_action("init", function() { @ini_set("upload_max_filesize", "64M"); @ini_set("post_max_size", "64M"); });' >> /var/www/html/wp-content/mu-plugins/force-upload-limits.php || echo 'MU plugin creation failed, continuing...'
-        chown www-data:www-data /var/www/html/wp-content/mu-plugins/force-upload-limits.php 2>/dev/null || echo 'MU plugin ownership failed, continuing...'
-        echo "MU plugin created:" && cat /var/www/html/wp-content/mu-plugins/force-upload-limits.php 2>/dev/null || echo "Failed to read MU plugin"
-        
-        echo "=== Creating diagnostic page ==="
-        # Create a diagnostic PHP page that works with WordPress
-        echo '<?php' > /var/www/html/upload-diagnostics.php || echo '⚠️  Diagnostic page creation failed, continuing...'
-        echo 'require_once("wp-load.php");' >> /var/www/html/upload-diagnostics.php || echo '⚠️  Diagnostic page creation failed, continuing...'
-        echo 'if (!current_user_can("administrator")) { wp_die("Access denied"); }' >> /var/www/html/upload-diagnostics.php || echo '⚠️  Diagnostic page creation failed, continuing...'
-        echo 'echo "<h1>Upload Diagnostics</h1>";' >> /var/www/html/upload-diagnostics.php || echo '⚠️  Diagnostic page creation failed, continuing...'
-        echo 'echo "upload_max_filesize: " . ini_get("upload_max_filesize") . "<br>";' >> /var/www/html/upload-diagnostics.php || echo '⚠️  Diagnostic page creation failed, continuing...'
-        echo 'echo "post_max_size: " . ini_get("post_max_size") . "<br>";' >> /var/www/html/upload-diagnostics.php || echo '⚠️  Diagnostic page creation failed, continuing...'
-        echo 'echo "WordPress max upload size: " . size_format(wp_max_upload_size()) . "<br>";' >> /var/www/html/upload-diagnostics.php || echo '⚠️  Diagnostic page creation failed, continuing...'
-        echo '?>' >> /var/www/html/upload-diagnostics.php || echo '⚠️  Diagnostic page creation failed, continuing...'
-        chown www-data:www-data /var/www/html/upload-diagnostics.php 2>/dev/null || echo '⚠️  Diagnostic page ownership failed, continuing...'
+
         
         echo '✅ WordPress configuration completed successfully!'
-        echo '🔍 Access upload diagnostics at: https://your-domain.com/upload-diagnostics.php'
     networks:
       - wordpress_network
 
