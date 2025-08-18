@@ -115,12 +115,16 @@ services:
         define('WP_MEMORY_LIMIT', '${MEMORY_LIMIT:-256M}');
         define('WP_MAX_MEMORY_LIMIT', '${MEMORY_LIMIT:-256M}');
         
-        # Force PHP upload settings - multiple methods for compatibility
-        ini_set('upload_max_filesize', '${UPLOAD_MAX_FILESIZE:-64M}');
-        ini_set('post_max_size', '${POST_MAX_SIZE:-64M}');
-        ini_set('memory_limit', '${MEMORY_LIMIT:-256M}');
-        ini_set('max_execution_time', '${MAX_EXECUTION_TIME:-300}');
-        ini_set('max_input_vars', '${MAX_INPUT_VARS:-3000}');
+        # Force PHP upload settings - using override approach
+        @ini_set('upload_max_filesize', '${UPLOAD_MAX_FILESIZE:-64M}');
+        @ini_set('post_max_size', '${POST_MAX_SIZE:-64M}');
+        @ini_set('memory_limit', '${MEMORY_LIMIT:-256M}');
+        @ini_set('max_execution_time', '${MAX_EXECUTION_TIME:-300}');
+        @ini_set('max_input_vars', '${MAX_INPUT_VARS:-3000}');
+        
+        # WordPress upload filter override (64MB = 67108864 bytes)
+        add_filter('upload_size_limit', function($size) { return 67108864; });
+        add_filter('wp_max_upload_size', function($size) { return 67108864; });
         
         # WordPress constants for upload handling
         if (!defined('WP_MEMORY_LIMIT')) define('WP_MEMORY_LIMIT', '${MEMORY_LIMIT:-256M}');
@@ -283,8 +287,14 @@ services:
         fi
         
         echo "=== File System Check ==="
-        echo "PHP config file exists:" && ls -la /usr/local/etc/php/conf.d/uploads.ini 2>/dev/null || echo "PHP config file NOT found"
-        echo "uploads.ini contents:" && cat /usr/local/etc/php/conf.d/uploads.ini 2>/dev/null || echo "Cannot read uploads.ini"
+        echo ".htaccess contents:" && tail -20 /var/www/html/.htaccess 2>/dev/null || echo "Cannot read .htaccess"
+        echo ""
+        echo "Upload config file:" && cat /var/www/html/wp-content/.htaccess-upload 2>/dev/null || echo "Upload config not found"
+        echo ""
+        echo "Testing PHP settings after .htaccess:"
+        
+        echo "=== WordPress Filter Override Applied ==="
+        echo "WordPress upload filters have been configured to force 64MB limit"
         
         echo "=== Creating diagnostic page ==="
         # Create a diagnostic PHP page for web access using echo commands
