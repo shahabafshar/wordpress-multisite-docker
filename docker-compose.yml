@@ -63,7 +63,8 @@ services:
         echo "Options -Indexes" > /mnt/wp-content/uploads/.htaccess || echo "htaccess creation failed, continuing..."
         echo "Order deny,allow" >> /mnt/wp-content/uploads/.htaccess || echo "htaccess line failed, continuing..."
         echo "Deny from all" >> /mnt/wp-content/uploads/.htaccess || echo "htaccess line failed, continuing..."
-        echo '<FilesMatch "\.(jpg|jpeg|png|gif|webp|pdf|doc|docx|xls|xlsx|ppt|pptx|txt|zip|rar)$">' >> /mnt/wp-content/uploads/.htaccess || echo "htaccess line failed, continuing..."
+        # Allow web assets: images, documents, CSS, JS, fonts, icons
+        echo '<FilesMatch "\.(jpg|jpeg|png|gif|webp|pdf|doc|docx|xls|xlsx|ppt|pptx|txt|zip|rar|css|js|woff|woff2|ttf|eot|svg|ico)$">' >> /mnt/wp-content/uploads/.htaccess || echo "htaccess line failed, continuing..."
         echo "    Allow from all" >> /mnt/wp-content/uploads/.htaccess || echo "htaccess line failed, continuing..."
         echo "</FilesMatch>" >> /mnt/wp-content/uploads/.htaccess || echo "htaccess line failed, continuing..."
         echo '<FilesMatch "\.(php|php3|php4|php5|phtml|pl|py|jsp|asp|sh|cgi)$">' >> /mnt/wp-content/uploads/.htaccess || echo "htaccess line failed, continuing..."
