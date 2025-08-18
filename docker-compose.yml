@@ -199,16 +199,14 @@ services:
         # 4. CREATE MUST-USE PLUGIN FOR UPLOAD LIMITS
         echo "🔧 Creating upload limits override plugin..."
         mkdir -p /var/www/html/wp-content/mu-plugins || echo "⚠️ MU plugins dir creation failed, continuing..."
-        cat > /var/www/html/wp-content/mu-plugins/force-upload-limits.php << 'EOF'
-<?php
-// Force Upload Limits - Must Use Plugin
-add_filter("upload_size_limit", function() { return 67108864; }, 999);
-add_filter("wp_max_upload_size", function() { return 67108864; }, 999);
-add_action("init", function() { 
-    @ini_set("upload_max_filesize", "64M"); 
-    @ini_set("post_max_size", "64M"); 
-});
-EOF
+        echo '<?php' > /var/www/html/wp-content/mu-plugins/force-upload-limits.php || echo "⚠️ MU plugin creation failed, continuing..."
+        echo '// Force Upload Limits - Must Use Plugin' >> /var/www/html/wp-content/mu-plugins/force-upload-limits.php || echo "⚠️ MU plugin creation failed, continuing..."
+        echo 'add_filter("upload_size_limit", function() { return 67108864; }, 999);' >> /var/www/html/wp-content/mu-plugins/force-upload-limits.php || echo "⚠️ MU plugin creation failed, continuing..."
+        echo 'add_filter("wp_max_upload_size", function() { return 67108864; }, 999);' >> /var/www/html/wp-content/mu-plugins/force-upload-limits.php || echo "⚠️ MU plugin creation failed, continuing..."
+        echo 'add_action("init", function() {' >> /var/www/html/wp-content/mu-plugins/force-upload-limits.php || echo "⚠️ MU plugin creation failed, continuing..."
+        echo '    @ini_set("upload_max_filesize", "64M");' >> /var/www/html/wp-content/mu-plugins/force-upload-limits.php || echo "⚠️ MU plugin creation failed, continuing..."
+        echo '    @ini_set("post_max_size", "64M");' >> /var/www/html/wp-content/mu-plugins/force-upload-limits.php || echo "⚠️ MU plugin creation failed, continuing..."
+        echo '});' >> /var/www/html/wp-content/mu-plugins/force-upload-limits.php || echo "⚠️ MU plugin creation failed, continuing..."
         chown www-data:www-data /var/www/html/wp-content/mu-plugins/force-upload-limits.php 2>/dev/null || echo "⚠️ MU plugin ownership failed, continuing..."
         echo "✅ Upload limits plugin created"
         
