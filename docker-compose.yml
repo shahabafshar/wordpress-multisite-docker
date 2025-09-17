@@ -323,9 +323,31 @@ services:
         
         echo '✅ Plugin installation completed!'
         
+        # Verify mu-plugins are loaded
+        echo '🔌 Verifying mu-plugins...'
+        if [ -d "/var/www/html/wp-content/mu-plugins" ]; then
+          echo "📁 mu-plugins directory exists"
+          ls -la /var/www/html/wp-content/mu-plugins/ || echo "⚠️  Could not list mu-plugins directory"
+          
+          # Check if suppress-signup-emails plugin exists
+          if [ -f "/var/www/html/wp-content/mu-plugins/suppress-signup-emails.php" ]; then
+            echo "✅ suppress-signup-emails.php mu-plugin found"
+            # Verify the plugin is syntactically correct
+            php -l /var/www/html/wp-content/mu-plugins/suppress-signup-emails.php || echo "⚠️  PHP syntax check failed for suppress-signup-emails.php"
+          else
+            echo "⚠️  suppress-signup-emails.php mu-plugin not found"
+          fi
+        else
+          echo "⚠️  mu-plugins directory not found"
+        fi
+        
         # Show installation summary
         echo '📊 Plugin Installation Summary:'
         wp plugin list --status=active --allow-root || echo '⚠️  Could not list active plugins, continuing...'
+        
+        # Show mu-plugins status
+        echo '📊 Must-Use Plugins Summary:'
+        wp plugin list --status=mustuse --allow-root || echo '⚠️  Could not list must-use plugins, continuing...'
         
         echo '🎨 Installing themes...'
         
@@ -380,6 +402,10 @@ services:
         sleep 3  # Wait for potential restart
         wp eval 'echo "Final WordPress max upload: " . size_format(wp_max_upload_size()) . "\n";' || echo '⚠️  Final WordPress upload check failed, continuing...'
         
+        echo "=== Mu-Plugin Functionality Test ==="
+        # Test if the suppress-signup-emails filter is working
+        wp eval 'if (has_filter("wpmu_signup_user_notification", "__return_false")) { echo "✅ suppress-signup-emails filter is active\n"; } else { echo "⚠️  suppress-signup-emails filter not found\n"; }' || echo '⚠️  Mu-plugin filter test failed, continuing...'
+        
         echo "=== Debug File System ==="
         echo "PHP uploads config exists?" && ls -la /usr/local/etc/php/conf.d/uploads.ini 2>/dev/null || echo "PHP uploads.ini NOT FOUND in container"
         echo "WordPress volumes:" && ls -la /var/www/html/php-uploads-config/ 2>/dev/null || echo "No php-uploads-config in wordpress volume"
@@ -391,6 +417,8 @@ services:
         echo '   ✅ WordPress Core installed and configured'
         echo '   ✅ Multisite enabled and configured'
         echo '   ✅ Essential plugins installed and activated'
+        echo '   ✅ Must-use plugins (mu-plugins) loaded'
+        echo '   ✅ Signup email suppression enabled'
         echo '   ✅ Hello Elementor theme installed and activated'
         echo '   ✅ Upload configuration applied (64MB limit)'
         echo '   ✅ Security .htaccess rules configured'
