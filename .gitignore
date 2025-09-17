@@ -1,9 +1,7 @@
 # WordPress content directories
-wp-content/
 uploads/
 plugins/
 themes/
-mu-plugins/
 php-config/
 php-uploads-config/
 
